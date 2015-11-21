@@ -1,0 +1,7 @@
+.gip
+.gip_lib
+*.swp
+*.swo
+.DS_Store
+bin/
+pkg/
