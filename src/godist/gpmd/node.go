@@ -1,4 +1,4 @@
-package godist
+package gpmd
 
 import(
 )

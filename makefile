@@ -1,4 +1,4 @@
-LIBS = godist
+LIBS = godist godist/gpmd
 
 all: compile
 
