@@ -22,6 +22,15 @@ var PORTS = []uint16{
 	26130, 26131, 26132, 26133, 26134, 26135, 26136, 26137, 26138, 26139,
 }
 
+// 在本进程运行一个 agent 服务。该服务保存了自身进程中向他注册的所有 Goroutine
+// 的消息通道。
+//
+// 该服务会监听一个随机端口，并且向本机的 GPMD 发送一条注册消息，将监听的随机
+// 端口注册。
+//
+// 当需要向集群上其他 Goroutine 发送消息时，需要知道该 Goroutine 的宿主节点名称
+// 以及该 Goroutine 的 ID 。然后调用 `godist.Cast(hostname, routineId, message)`
+// 向目标 Goroutine 发送消息。消息格式是 []byte 。
 func Init(name string) {
 	nameAndHost := make([]string, 2)
 	nameAndHost = strings.SplitN(name, "@", 2)
@@ -71,9 +80,18 @@ func serve() {
 	}
 }
 
+/**
+ *
+ * Request message described
+ * +------------------+
+ * | length | request |
+ * |------------------|
+ * | 8      | length  |
+ * +------------------+
+ */
 func handleConnection(conn *net.TCPConn) {
 	for {
-		lengthBuffer := make([]byte, 2)
+		lengthBuffer := make([]byte, 8)
 		if _, err := conn.Read(lengthBuffer); err != nil {
 			// handle error
 			continue
