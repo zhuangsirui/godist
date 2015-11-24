@@ -4,6 +4,7 @@ import(
 	"net"
 	//"bytes"
 	"errors"
+	"godist/base"
 	"encoding/binary"
 )
 
@@ -64,11 +65,11 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
 
 /**
  * Request message described
- * +----------------------------------+
- * | port | name length | name        |
- * |------|-------------|-------------|
- * | 2    | 2           | name length |
- * +----------------------------------+
+ * +--------------------------------------------------+
+ * | port | nameLen | name        | hostLen | host    |
+ * |------|---------|---------------------------------|
+ * | 2    | 2       | nameLen     | 2       | hostLen |
+ * +--------------------------------------------------+
  *
  * Answer message described
  * +--------+
@@ -78,12 +79,20 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
  * +--------+
  */
 func handleRegister(request []byte) ([]byte, error) {
+	// 1. port
 	port := binary.LittleEndian.Uint16(request[:2])
+	// 2. name length
 	nameLen := binary.LittleEndian.Uint16(request[2:4])
-	name := string(request[5:5+nameLen])
-	ok := register(node{
-		port: port,
-		name: name,
+	// 3. name
+	name := string(request[4:4+nameLen])
+	// 4. host length
+	hostLen := binary.LittleEndian.Uint16(request[4+nameLen:4+nameLen+2])
+	// 5. host
+	host := string(request[4+nameLen+2:4+nameLen+2+hostLen])
+	ok := register(&base.Node{
+		Port: port,
+		Host: host,
+		Name: name,
 	})
 	var answer []byte
 	var err error
@@ -131,15 +140,15 @@ func handleQuery(request []byte) ([]byte, error) {
 	answer := []byte{ACK_RES_OK}
 	// 2. Push port number
 	portBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(portBuffer, node.port)
+	binary.LittleEndian.PutUint16(portBuffer, node.Port)
 	answer = append(answer, portBuffer...)
 	// 3. Push node name length
 	nameLengthBuffer := make([]byte, 2)
-	nameLength := len([]byte(node.name))
+	nameLength := len([]byte(node.Name))
 	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(nameLength))
 	answer = append(answer, nameLengthBuffer...)
 	// 4. Push node name
-	answer = append(answer, []byte(node.name)...)
+	answer = append(answer, []byte(node.Name)...)
 	return answer, nil
 }
 

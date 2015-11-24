@@ -3,18 +3,19 @@ package gpmd
 import(
 	"fmt"
 	"net"
+	"godist/base"
 )
 
 type manager struct {
 	port uint16
 	host string
-	nodes map[string]node
+	nodes map[string]*base.Node
 }
 
 var m = &manager{
 	port: 2613,
 	host: "",
-	nodes: make(map[string]node),
+	nodes: make(map[string]*base.Node),
 }
 
 func SetPort(port uint16) {
@@ -25,15 +26,15 @@ func SetHost(host string) {
 	m.host = host
 }
 
-func find(name string) (node, bool) {
+func find(name string) (*base.Node, bool) {
 	node, exist := m.nodes[name]
 	return node, exist
 }
 
-func register(node node) bool {
-	_, exist := m.nodes[node.name]
+func register(node *base.Node) bool {
+	_, exist := m.nodes[node.Name]
 	if !exist {
-		m.nodes[node.name] = node
+		m.nodes[node.Name] = node
 	}
 	return !exist
 }

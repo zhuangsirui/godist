@@ -6,6 +6,7 @@ import(
 	"errors"
 	"encoding/binary"
 	"strings"
+	"godist/base"
 )
 
 const(
@@ -64,11 +65,11 @@ func serve() {
 			// handle accept error
 			continue
 		}
-		go handleConnect(conn)
+		go handleConnection(conn)
 	}
 }
 
-func handleConnect(conn *net.TCPConn) {
+func handleConnection(conn *net.TCPConn) {
 	defer conn.Close()
 	for {
 		lengthBuffer := make([]byte, 2)
@@ -109,6 +110,34 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
 
 /**
  *
+ * Connect message described
+ * +----------------------------------------------+
+ * | port | nameLen | name    | hostLen | host    |
+ * |----------------------------------------------|
+ * | 2    | 2       | nameLen | 2       | hostLen |
+ * +----------------------------------------------+
+ */
+func handleConnect(request []byte) ([]byte, error) {
+	// 1. port
+	port := binary.LittleEndian.Uint16(request[:2])
+	// 2. name length
+	nLength := binary.LittleEndian.Uint16(request[2:4])
+	// 3. name
+	name := string(request[4:4+nLength])
+	// 4. host length
+	hLength := binary.LittleEndian.Uint16(request[4+nLength:4+nLength+2])
+	// 5. host name
+	host := string(request[4+nLength+2:4+nLength+2+hLength])
+	registerNode(&base.Node{
+		Name: name,
+		Host: host,
+		Port: port,
+	})
+	return []byte{}, nil
+}
+
+/**
+ *
  * Cast message described
  * +----------------------------------------------+
  * | routine id | message length | message        |
@@ -124,11 +153,11 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
  * +--------+
  */
 func handleCast(request []byte) ([]byte, error) {
-	routineId := routineId(binary.LittleEndian.Uint64(request[:8]))
+	routineId := base.RoutineId(binary.LittleEndian.Uint64(request[:8]))
 	length := binary.LittleEndian.Uint64(request[8:16])
 	message := request[16:16+length]
 	if routine, exist := find(routineId); exist {
-		routine.cast(message)
+		routine.Cast(message)
 		return []byte{ACK_CAST_OK}, nil
 	} else {
 		err := errors.New("godist: cast target not found")
