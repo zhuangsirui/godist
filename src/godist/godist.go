@@ -41,6 +41,8 @@ func registerNode(node *base.Node) {
 	}
 }
 
+// 尝试向另一个节点建立连接。建立好之后会一直保持连接。用于节点之间的 Goroutine
+// 消息收发。
 func ConnectTo(nodeName string) {
 	if node, exist := agent.nodes[nodeName]; exist {
 		address, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", node.Host, node.Port))
@@ -93,6 +95,7 @@ func ConnectTo(nodeName string) {
 	}
 }
 
+// 向目标 Goroutine 发送消息。
 func CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	if conn, exist := agent.connections[nodeName]; exist {
 		request := []byte{}
