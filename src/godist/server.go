@@ -12,8 +12,10 @@ import(
 const(
 	REQ_CAST = 0x01
 
-	ACK_CAST_OK = 0x00
-	ACK_CAST_ROUTINE_NOT_FOUND = 0x01
+	ACK_CONN_OK                = 0x01
+	ACK_CONN_NODE_EXIST        = 0x02
+	ACK_CAST_OK                = 0x03
+	ACK_CAST_ROUTINE_NOT_FOUND = 0x04
 )
 
 var PORTS = []uint16{
@@ -70,7 +72,6 @@ func serve() {
 }
 
 func handleConnection(conn *net.TCPConn) {
-	defer conn.Close()
 	for {
 		lengthBuffer := make([]byte, 2)
 		if _, err := conn.Read(lengthBuffer); err != nil {
@@ -84,18 +85,21 @@ func handleConnection(conn *net.TCPConn) {
 			continue
 		}
 		code, request := buffer[0], buffer[1:]
-		if answer, err := dispatchRequest(code, request); err != nil {
-			// handle error
-			continue
-		} else {
-			if _, wErr := conn.Write(answer); wErr != nil {
-				// handle error
-				continue
-			}
+		answer, err := dispatchRequest(code, request)
+		if err != nil {
+			conn.Close()
+			break
+		}
+		if _, err := conn.Write(answer); err != nil {
+			conn.Close()
+			break
 		}
 	}
 }
 
+/**
+ * 分发请求。如果返回 error ，则中断该链接。
+ */
 func dispatchRequest(code byte, request []byte) ([]byte, error) {
 	var answer []byte
 	var err error
@@ -116,6 +120,13 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
  * |----------------------------------------------|
  * | 2    | 2       | nameLen | 2       | hostLen |
  * +----------------------------------------------+
+ *
+ * Answer message described
+ * +--------+
+ * | result |
+ * |--------|
+ * | 1      |
+ * +--------+
  */
 func handleConnect(request []byte) ([]byte, error) {
 	// 1. port
@@ -128,12 +139,17 @@ func handleConnect(request []byte) ([]byte, error) {
 	hLength := binary.LittleEndian.Uint16(request[4+nLength:4+nLength+2])
 	// 5. host name
 	host := string(request[4+nLength+2:4+nLength+2+hLength])
-	registerNode(&base.Node{
-		Name: name,
-		Host: host,
-		Port: port,
-	})
-	return []byte{}, nil
+	if nodeExist(name) {
+		err := errors.New("godist: requester node name exist")
+		return []byte{ACK_CONN_NODE_EXIST}, err
+	} else {
+		registerNode(&base.Node{
+			Name: name,
+			Host: host,
+			Port: port,
+		})
+		return []byte{ACK_CONN_OK}, nil
+	}
 }
 
 /**
