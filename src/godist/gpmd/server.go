@@ -28,7 +28,7 @@ const(
  * | 2      | 1    | length - 1 |
  * +----------------------------+
  */
-func handleRequest(conn *net.TCPConn) error {
+func handleConnection(conn *net.TCPConn) error {
 	lengthBuffer := make([]byte, 2)
 	if _, err := conn.Read(lengthBuffer); err != nil {
 		return err
@@ -130,7 +130,7 @@ func handleRegister(request []byte) ([]byte, error) {
  */
 func handleQuery(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[3:3+nameLen])
+	name := string(request[2:2+nameLen])
 	node, exist := find(name)
 	if !exist {
 		answer := []byte{ACK_RES_NODE_NOT_EXIST}
@@ -170,7 +170,7 @@ func handleQuery(request []byte) ([]byte, error) {
  */
 func handleUnregister(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[3:3+nameLen])
+	name := string(request[2:2+nameLen])
 	ok := unregister(name)
 	var answer []byte
 	var err error

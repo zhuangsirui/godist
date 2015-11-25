@@ -74,7 +74,7 @@ func RegisterToLocal() {
 	request = append(request, []byte(agent.host)...)
 	// 6. add length prefix
 	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint64(requestLengthBuffer, uint64(len(request)))
+	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
 	request = append(requestLengthBuffer, request...)
 	if _, wErr := conn.Write(request); wErr != nil {
 		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))

@@ -18,10 +18,12 @@ var m = &manager{
 	nodes: make(map[string]*base.Node),
 }
 
+// 设置 GPMD 的监听端口。默认 2613 。
 func SetPort(port uint16) {
 	m.port = port
 }
 
+// 设置 GPMD 的监听地址。默认为空。
 func SetHost(host string) {
 	m.host = host
 }
@@ -60,6 +62,10 @@ func Init() {
 		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
 		panic(panicInfo)
 	}
+	go acceptLoop(listener)
+}
+
+func acceptLoop(listener *net.TCPListener) {
 	for {
 		conn, acceptErr := listener.AcceptTCP()
 		if acceptErr != nil {
@@ -68,6 +74,6 @@ func Init() {
 		}
 		defer conn.Close()
 		// 同步调用，原子性处理各个节点的请求
-		handleRequest(conn)
+		handleConnection(conn)
 	}
 }
