@@ -11,6 +11,7 @@ import(
 
 const(
 	REQ_CAST = 0x01
+	REQ_CONN = 0x02
 
 	ACK_CONN_OK                = 0x01
 	ACK_CONN_NODE_EXIST        = 0x02
@@ -38,6 +39,11 @@ func Init(name string) {
 	agent.host = nameAndHost[1]
 	accept()
 	go serve()
+}
+
+// 设置本机的 GPMD 服务地址。默认为 ":2613"
+func SetGPMD(address string) {
+	agent.gpmd = address
 }
 
 func accept() {
@@ -122,6 +128,8 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
 	var answer []byte
 	var err error
 	switch code {
+	case REQ_CONN:
+		answer, err = handleConnect(request)
 	case REQ_CAST:
 		answer, err = handleCast(request)
 	default:
