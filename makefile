@@ -3,9 +3,8 @@ LIBS = godist godist/gpmd
 all: compile
 
 compile:
-	go get ${LIBS}
 	go build ${LIBS}
 
 test:
-	go get ${LIBS}
-	go test ${LIBS}
+	go get github.com/axw/gocov/gocov
+	gocov test ${LIBS} | gocov report

@@ -18,6 +18,23 @@ var m = &manager{
 	nodes: make(map[string]*base.Node),
 }
 
+// 初始化 GPMD 服务。
+func Init() {
+	listenAddr, rErr := net.ResolveTCPAddr(
+		"tcp",
+		fmt.Sprintf("%s:%d", m.host, m.port),
+	)
+	if rErr != nil {
+		panic(fmt.Sprintf("GPMD listen port error: ", rErr))
+	}
+	listener, listenErr := net.ListenTCP("tcp", listenAddr)
+	if listenErr != nil {
+		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
+		panic(panicInfo)
+	}
+	go acceptLoop(listener)
+}
+
 // 设置 GPMD 的监听端口。默认 2613 。
 func SetPort(port uint16) {
 	m.port = port
@@ -47,22 +64,6 @@ func unregister(name string) bool {
 		delete(m.nodes, name)
 	}
 	return exist
-}
-
-func Init() {
-	listenAddr, rErr := net.ResolveTCPAddr(
-		"tcp",
-		fmt.Sprintf("%s:%d", m.host, m.port),
-	)
-	if rErr != nil {
-		panic(fmt.Sprintf("GPMD listen port error: ", rErr))
-	}
-	listener, listenErr := net.ListenTCP("tcp", listenAddr)
-	if listenErr != nil {
-		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
-		panic(panicInfo)
-	}
-	go acceptLoop(listener)
 }
 
 func acceptLoop(listener *net.TCPListener) {
