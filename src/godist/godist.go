@@ -6,6 +6,7 @@ import(
 	"encoding/binary"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"godist/base"
 	"godist/gpmd"
 )
@@ -18,6 +19,7 @@ type Agent struct {
 	name string
 	host string
 	port uint16
+	routineCounter uint64
 	gpmd base.GPMD
 	lisener *net.TCPListener
 	nodes map[string]*base.Node
@@ -46,6 +48,13 @@ func New(name string) *Agent {
 func (agent *Agent) SetGPMD(host string, port uint16) {
 	agent.gpmd.Host = host
 	agent.gpmd.Port = port
+}
+
+// 向本地的 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则
+// 会抛出 panic 。
+func (agent *Agent) RegisterRoutine(routine *base.Routine) {
+	routine.SetId(agent.incrRoutineId())
+	agent.registerRoutine(routine)
 }
 
 // 向本地 GPMD 注册节点信息，无法注册会 panic 异常。
@@ -186,7 +195,6 @@ func (agent *Agent) QueryNode(nodeName string) {
 // 尝试向另一个节点建立连接。建立好之后会一直保持持有连接。用于节点之间的
 // Goroutine 消息收发。
 func (agent *Agent) ConnectTo(nodeName string) {
-	agent.QueryNode(nodeName)
 	name, _ := parseNameAndHost(nodeName)
 	if node, exist := agent.nodes[name]; exist {
 		address, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", node.Host, node.Port))
@@ -249,10 +257,26 @@ func (agent *Agent) nodeExist(name string) bool {
 	return exist
 }
 
+func (agent *Agent) connExist(name string) bool {
+	_, exist := agent.connections[name]
+	return exist
+}
+
 func (agent *Agent) registerNode(node *base.Node) {
 	if _, exist := agent.nodes[node.Name]; !exist {
 		agent.nodes[node.Name] = node
 	}
+}
+
+func (agent *Agent) registerRoutine(routine *base.Routine) {
+	if _, exist := agent.routines[routine.GetId()]; !exist {
+		agent.routines[routine.GetId()] = routine
+	}
+}
+
+func (agent *Agent) incrRoutineId() base.RoutineId {
+	id := atomic.AddUint64(&agent.routineCounter, 1)
+	return base.RoutineId(id)
 }
 
 func parseNameAndHost(nodeName string) (string, string) {

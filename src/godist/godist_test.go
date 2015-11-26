@@ -3,6 +3,7 @@ package godist
 import(
 	"testing"
 	"godist/gpmd"
+	"godist/base"
 )
 
 var tAgent1, tAgent2 *Agent
@@ -39,7 +40,48 @@ func TestConnect(t *testing.T) {
 	go tAgent1.Serve()
 	go tAgent2.Serve()
 	tAgent2.Register()
+	tAgent1.QueryNode(nodeName2)
 	tAgent1.ConnectTo(nodeName2)
-	t.Log(tAgent1.nodes)
-	t.Log(tAgent1.connections)
+	tAgent2.QueryNode(nodeName1)
+	tAgent2.ConnectTo(nodeName1)
+	name1, _ := parseNameAndHost(nodeName1)
+	name2, _ := parseNameAndHost(nodeName2)
+	if !tAgent1.nodeExist(name2) {
+		t.Error("node not exist")
+	}
+	if _, exist := tAgent1.connections[name2]; !exist {
+		t.Error("connection not exist")
+	}
+	if !tAgent2.nodeExist(name1) {
+		t.Error("node not exist")
+	}
+	if _, exist := tAgent2.connections[name1]; !exist {
+		t.Error("connection not exist")
+	}
+}
+
+func TestRegisterRoutine(t *testing.T) {
+	c := make(chan []byte)
+	routine := &base.Routine{
+		Channel: c,
+	}
+	tAgent1.RegisterRoutine(routine)
+	routine2, exist := tAgent1.routines[routine.GetId()]
+	if !exist {
+		t.Error("register routine failed.")
+	}
+	if routine != routine2 {
+		t.Error("routine is diffrent!")
+	}
+}
+
+func TestCastTo(t *testing.T) {
+	c := make(chan []byte) // make channle sync for test
+	routine := &base.Routine{
+		Channel: c,
+	}
+	tAgent1.RegisterRoutine(routine)
+	name, _ := parseNameAndHost(nodeName1)
+	go tAgent2.CastTo(name, routine.GetId(), []byte{'p', 'i', 'n', 'g'})
+	<-c
 }

@@ -145,17 +145,16 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 	hLength := binary.LittleEndian.Uint16(request[4+nLength:4+nLength+2])
 	// 5. host name
 	host := string(request[4+nLength+2:4+nLength+2+hLength])
-	if agent.nodeExist(name) {
-		err := errors.New("godist: requester node name exist")
-		return []byte{ACK_CONN_NODE_EXIST}, err
-	} else {
-		agent.registerNode(&base.Node{
-			Name: name,
-			Host: host,
-			Port: port,
-		})
-		return []byte{ACK_CONN_OK}, nil
+
+	agent.registerNode(&base.Node{
+		Name: name,
+		Host: host,
+		Port: port,
+	})
+	if !agent.connExist(name) {
+		go agent.ConnectTo(fmt.Sprintf("%s@%s", name, host))
 	}
+	return []byte{ACK_CONN_OK}, nil
 }
 
 /**
@@ -182,7 +181,6 @@ func (agent *Agent) handleCast(request []byte) ([]byte, error) {
 		routine.Cast(message)
 		return []byte{ACK_CAST_OK}, nil
 	} else {
-		err := errors.New("godist: cast target not found")
-		return []byte{ACK_CAST_ROUTINE_NOT_FOUND}, err
+		return []byte{ACK_CAST_ROUTINE_NOT_FOUND}, nil
 	}
 }
