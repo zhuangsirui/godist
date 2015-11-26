@@ -13,13 +13,15 @@ import(
 
 const EPMD_PORT = 2613
 
+var routineCounter uint64
+
 // Agent 结构持有本节点所有注册过的 Goroutine 对象，所有在集群中的节点信息以及
 // 针对所有节点的链接。
 type Agent struct {
 	name string
 	host string
 	port uint16
-	routineCounter uint64
+	routineCounter *uint64
 	gpmd base.GPMD
 	lisener *net.TCPListener
 	nodes map[string]*base.Node
@@ -32,6 +34,7 @@ func New(name string) *Agent {
 	nameAndHost := make([]string, 2)
 	nameAndHost = strings.SplitN(name, "@", 2)
 	return &Agent{
+		routineCounter: &routineCounter,
 		name: nameAndHost[0],
 		host: nameAndHost[1],
 		gpmd: base.GPMD{
@@ -275,7 +278,7 @@ func (agent *Agent) registerRoutine(routine *base.Routine) {
 }
 
 func (agent *Agent) incrRoutineId() base.RoutineId {
-	id := atomic.AddUint64(&agent.routineCounter, 1)
+	id := atomic.AddUint64(agent.routineCounter, 1)
 	return base.RoutineId(id)
 }
 

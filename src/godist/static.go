@@ -17,7 +17,7 @@ var _agent = &Agent{
 // 以及该 Goroutine 的 ID 。然后调用 `godist.Cast(hostname, routineId, message)`
 // 向目标 Goroutine 发送消息。消息格式是 []byte 。
 func Init(name string) {
-	_agent := New(name)
+	_agent = New(name)
 	_agent.Listen()
 	go _agent.Serve()
 }
@@ -33,13 +33,14 @@ func Register() {
 	_agent.Register()
 }
 
-// 向目标 Goroutine 发送消息。
-func CastTo(nodeName string , routineId base.RoutineId, message []byte) {
-	_agent.CastTo(nodeName, routineId, message)
-}
-
 // 尝试向另一个节点建立连接。建立好之后会一直保持连接。用于节点之间的 Goroutine
 // 消息收发。
 func ConnectTo(nodeName string) {
+	_agent.QueryNode(nodeName)
 	_agent.ConnectTo(nodeName)
+}
+
+// 向目标 Goroutine 发送消息。
+func CastTo(nodeName string , routineId base.RoutineId, message []byte) {
+	_agent.CastTo(nodeName, routineId, message)
 }
