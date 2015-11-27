@@ -134,9 +134,62 @@ func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []
 	}
 }
 
+func (agent *Agent) QueryAllNode(nodeName string) {
+	name, _ := parseNameAndHost(nodeName)
+	if conn, exist := agent.connections[name]; exist {
+		// REQUEST
+		request := []byte{REQ_QUERY_ALL}
+		// 1. name length
+		nameLengthBuffer := make([]byte, 2)
+		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(name)))
+		request = append(request, nameLengthBuffer...)
+		// 2. name
+		request = append(request, []byte(name)...)
+		// 3. add length prefix
+		requestLengthBuffer := make([]byte, 2)
+		binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
+		request = append(requestLengthBuffer, request...)
+		if _, wErr := conn.Write(request); wErr != nil {
+			return
+		}
+		// ANSWER
+		lenBuf := make([]byte, 2)
+		if _, rErr := conn.Read(lenBuf); rErr != nil {
+			return
+		}
+		length := binary.LittleEndian.Uint16(lenBuf)
+		answer := make([]byte, length)
+		countBuf := make([]byte, 2)
+		count := int(binary.LittleEndian.Uint16(countBuf))
+		for i := 0; i < count; i++ {
+			var portBuf, nameLenBuf, nameBuf, hostLenBuf, hostBuf []byte
+			portBuf, answer = answer[:2], answer[2:]
+			port := binary.LittleEndian.Uint16(portBuf)
+			nameLenBuf, answer = answer[:2], answer[2:]
+			nameLen := binary.LittleEndian.Uint16(nameLenBuf)
+			nameBuf, answer = answer[:nameLen], answer[nameLen:]
+			name := string(nameBuf)
+			hostLenBuf, answer = answer[:2], answer[2:]
+			hostLen := binary.LittleEndian.Uint16(hostLenBuf)
+			hostBuf, answer = answer[:hostLen], answer[hostLen:]
+			host := string(hostBuf)
+			node := &base.Node{
+				Port: port,
+				Host: host,
+				Name: name,
+			}
+			agent.registerNode(node)
+			if !agent.connExist(name) {
+				go agent.ConnectTo(node.FullName())
+			}
+		}
+	}
+}
+
+// 查询目标节点的详细信息。
 func (agent *Agent) QueryNode(nodeName string) {
 	name, host := parseNameAndHost(nodeName)
-	if _, exist := agent.nodes[name]; !exist {
+	if !agent.nodeExist(name) {
 		gpmdAddr, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf(
 			"%s:%d", host, agent.gpmd.Port,
 		))

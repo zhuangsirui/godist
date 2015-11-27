@@ -1,6 +1,7 @@
 package base
 
 import(
+	"fmt"
 )
 
 type Node struct {
@@ -9,3 +10,6 @@ type Node struct {
 	Name string
 }
 
+func (n *Node) FullName() string {
+	return fmt.Sprintf("%s@%s", n.Name, n.Host)
+}
