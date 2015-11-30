@@ -6,9 +6,9 @@ import(
 	"godist/base"
 )
 
-var tAgent1, tAgent2 *Agent
+var tAgent1, tAgent2, tAgent3 *Agent
 
-var nodeName1, nodeName2 = "testnode1@localhost", "testnode2@localhost"
+var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhost", "testnode3@localhost"
 
 func TestNew(t *testing.T) {
 	tAgent1 = New(nodeName1)
@@ -84,4 +84,19 @@ func TestCastTo(t *testing.T) {
 	name, _ := parseNameAndHost(nodeName1)
 	go tAgent2.CastTo(name, routine.GetId(), []byte{'p', 'i', 'n', 'g'})
 	<-c
+}
+
+func TestQueryAll(t *testing.T) {
+	tAgent3 = New(nodeName3)
+	tAgent3.Listen()
+	go tAgent3.Serve()
+	tAgent3.QueryNode(nodeName2)
+	tAgent3.ConnectTo(nodeName2)
+	tAgent2.QueryNode(nodeName3)
+	tAgent2.ConnectTo(nodeName3)
+	tAgent3.QueryAllNode(nodeName2)
+	name, _ := parseNameAndHost(nodeName1)
+	if !tAgent3.nodeExist(name) {
+		t.Error("Node 1 dosen't connect automatic")
+	}
 }

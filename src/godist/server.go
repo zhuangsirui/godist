@@ -162,19 +162,20 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 // +-------------------------------------+
 //
 // Answer message described
-// +-------------------------------------------------------------------------------------------------+
-// |            | first node message                                           | second node message |
-// |-------------------------------------------------------------------------------------------------|
-// | node count | port | name length | name        | host length | host        | ...                 |
-// |-------------------------------------------------------------------------------------------------|
-// | 2          | 2    | 2           | name length | 2           | host length | ...                 |
-// +-------------------------------------------------------------------------------------------------+
+// +-------------------------------------------------------------------------------------------------------------------+
+// |        |        |            | first node message                                           | second node message |
+// |--------|--------|-------------------------------------------------------------------------------------------------|
+// | result | length | node count | port | name length | name        | host length | host        | ...                 |
+// |--------|--------|-------------------------------------------------------------------------------------------------|
+// | 1      | 2      | 2          | 2    | 2           | name length | 2           | host length | ...                 |
+// +-------------------------------------------------------------------------------------------------------------------+
 func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 	nameLength := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2:2+nameLength])
 	if agent.nodeExist(name) {
 		var nodeCount uint16 = 0
-		answer := []byte{ACK_QUERY_ALL_OK}
+		//answer := []byte{ACK_QUERY_ALL_OK}
+		answer := []byte{}
 		for _, node := range agent.nodes {
 			// 1. port
 			portBuf := make([]byte, 2)
@@ -197,6 +198,10 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 		countBuf := make([]byte, 2)
 		binary.LittleEndian.PutUint16(countBuf, nodeCount)
 		answer = append(countBuf, answer...)
+		lengthBuf := make([]byte, 2)
+		binary.LittleEndian.PutUint16(lengthBuf, uint16(len(answer)))
+		answer = append(lengthBuf, answer...)
+		answer = append([]byte{ACK_QUERY_ALL_OK}, answer...)
 		return answer, nil
 	}
 	return []byte{ACK_QUERY_ALL_ERR}, nil

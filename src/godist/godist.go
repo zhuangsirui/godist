@@ -141,25 +141,36 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		request := []byte{REQ_QUERY_ALL}
 		// 1. name length
 		nameLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(name)))
+		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
 		request = append(request, nameLengthBuffer...)
 		// 2. name
-		request = append(request, []byte(name)...)
+		request = append(request, []byte(agent.name)...)
 		// 3. add length prefix
-		requestLengthBuffer := make([]byte, 2)
+		requestLengthBuffer := make([]byte, 8)
 		binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
 		request = append(requestLengthBuffer, request...)
 		if _, wErr := conn.Write(request); wErr != nil {
 			return
 		}
 		// ANSWER
-		lenBuf := make([]byte, 2)
-		if _, rErr := conn.Read(lenBuf); rErr != nil {
+		ackCodeBuf := make([]byte, 1)
+		if _, rErr := conn.Read(ackCodeBuf); rErr != nil {
 			return
 		}
-		length := binary.LittleEndian.Uint16(lenBuf)
+		if ackCodeBuf[0] != ACK_QUERY_ALL_OK {
+			return
+		}
+		lengthBuf := make([]byte, 2)
+		if _, rLErr := conn.Read(lengthBuf); rLErr != nil {
+			return
+		}
+		length := binary.LittleEndian.Uint16(lengthBuf)
 		answer := make([]byte, length)
+		if _, rAErr := conn.Read(answer); rAErr != nil {
+			return
+		}
 		countBuf := make([]byte, 2)
+		countBuf, answer = answer[:2], answer[2:]
 		count := int(binary.LittleEndian.Uint16(countBuf))
 		for i := 0; i < count; i++ {
 			var portBuf, nameLenBuf, nameBuf, hostLenBuf, hostBuf []byte
@@ -180,7 +191,9 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 			}
 			agent.registerNode(node)
 			if !agent.connExist(name) {
-				go agent.ConnectTo(node.FullName())
+				go func() {
+					agent.ConnectTo(node.FullName())
+				}()
 			}
 		}
 	}
