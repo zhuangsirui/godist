@@ -1,20 +1,20 @@
 package gpmd
 
-import(
+import (
 	"fmt"
-	"net"
 	"godist/base"
+	"net"
 )
 
 type manager struct {
-	port uint16
-	host string
+	port  uint16
+	host  string
 	nodes map[string]*base.Node
 }
 
 var m = &manager{
-	port: 2613,
-	host: "",
+	port:  2613,
+	host:  "",
 	nodes: make(map[string]*base.Node),
 }
 

@@ -1,11 +1,10 @@
 package godist
 
-import(
+import (
 	"godist/base"
 )
 
-var _agent = &Agent{
-}
+var _agent = &Agent{}
 
 // 在本进程运行一个 agent 服务。该服务保存了自身进程中向他注册的所有 Goroutine
 // 的消息通道。
@@ -41,6 +40,6 @@ func ConnectTo(nodeName string) {
 }
 
 // 向目标 Goroutine 发送消息。
-func CastTo(nodeName string , routineId base.RoutineId, message []byte) {
+func CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	_agent.CastTo(nodeName, routineId, message)
 }

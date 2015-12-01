@@ -1,14 +1,14 @@
 package gpmd
 
-import(
-	"encoding/binary"
-	"testing"
+import (
 	"bytes"
-	"net"
+	"encoding/binary"
 	"fmt"
+	"net"
+	"testing"
 )
 
-const(
+const (
 	testPort = 1989
 	testHost = "localhost"
 )
@@ -132,14 +132,22 @@ func TestQuery(t *testing.T) {
 	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
 	request = append(requestLengthBuffer, request...)
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil { t.Error(dErr) }
+	if dErr != nil {
+		t.Error(dErr)
+	}
 	_, wErr := conn.Write(request)
-	if wErr != nil { t.Error(dErr) }
+	if wErr != nil {
+		t.Error(dErr)
+	}
 	ackBuffer := make([]byte, 2)
 	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil { t.Error(rErr) }
+	if rErr != nil {
+		t.Error(rErr)
+	}
 	if bytes.Compare(ackBuffer, []byte{REQ_QUERY, ACK_RES_OK}) != 0 {
 		t.Error("ack error")
 	}
@@ -158,14 +166,22 @@ func TestQueryNotExist(t *testing.T) {
 	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
 	request = append(requestLengthBuffer, request...)
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil { t.Error(err) }
+	if err != nil {
+		t.Error(err)
+	}
 	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil { t.Error(dErr) }
+	if dErr != nil {
+		t.Error(dErr)
+	}
 	_, wErr := conn.Write(request)
-	if wErr != nil { t.Error(dErr) }
+	if wErr != nil {
+		t.Error(dErr)
+	}
 	ackBuffer := make([]byte, 2)
 	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil { t.Error(rErr) }
+	if rErr != nil {
+		t.Error(rErr)
+	}
 	if bytes.Compare(ackBuffer, []byte{REQ_QUERY, ACK_RES_NODE_NOT_EXIST}) != 0 {
 		t.Error("ack error")
 	}

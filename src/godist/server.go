@@ -1,15 +1,15 @@
 package godist
 
-import(
-	"fmt"
-	"net"
-	"errors"
+import (
 	"encoding/binary"
-	"strings"
+	"errors"
+	"fmt"
 	"godist/base"
+	"net"
+	"strings"
 )
 
-const(
+const (
 	REQ_CAST      = 0x01
 	REQ_CONN      = 0x02
 	REQ_QUERY_ALL = 0x03
@@ -137,11 +137,11 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 	// 2. name length
 	nLength := binary.LittleEndian.Uint16(request[2:4])
 	// 3. name
-	name := string(request[4:4+nLength])
+	name := string(request[4 : 4+nLength])
 	// 4. host length
-	hLength := binary.LittleEndian.Uint16(request[4+nLength:4+nLength+2])
+	hLength := binary.LittleEndian.Uint16(request[4+nLength : 4+nLength+2])
 	// 5. host name
-	host := string(request[4+nLength+2:4+nLength+2+hLength])
+	host := string(request[4+nLength+2 : 4+nLength+2+hLength])
 	node := &base.Node{
 		Name: name,
 		Host: host,
@@ -171,7 +171,7 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 // +-------------------------------------------------------------------------------------------------------------------+
 func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 	nameLength := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[2:2+nameLength])
+	name := string(request[2 : 2+nameLength])
 	if agent.nodeExist(name) {
 		var nodeCount uint16 = 0
 		//answer := []byte{ACK_QUERY_ALL_OK}
@@ -223,7 +223,7 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 func (agent *Agent) handleCast(request []byte) ([]byte, error) {
 	routineId := base.RoutineId(binary.LittleEndian.Uint64(request[:8]))
 	length := binary.LittleEndian.Uint64(request[8:16])
-	message := request[16:16+length]
+	message := request[16 : 16+length]
 	if routine, exist := agent.find(routineId); exist {
 		routine.Cast(message)
 		return []byte{ACK_CAST_OK}, nil

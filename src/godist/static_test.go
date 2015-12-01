@@ -1,8 +1,8 @@
 package godist
 
-import(
-	"testing"
+import (
 	"godist/base"
+	"testing"
 )
 
 var nodeName4, nodeName5 = "testnode4@localhost", "testnode5@localhost"
@@ -39,4 +39,3 @@ func TestStaticCastTo(t *testing.T) {
 	go CastTo(name, routine.GetId(), []byte{'p', 'i', 'n', 'g'})
 	<-c
 }
-

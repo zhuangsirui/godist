@@ -1,14 +1,14 @@
 package godist
 
-import(
+import (
 	"net"
 	//"errors"
 	"encoding/binary"
 	"fmt"
-	"strings"
-	"sync/atomic"
 	"godist/base"
 	"godist/gpmd"
+	"strings"
+	"sync/atomic"
 )
 
 const EPMD_PORT = 2613
@@ -18,15 +18,15 @@ var routineCounter uint64
 // Agent 结构持有本节点所有注册过的 Goroutine 对象，所有在集群中的节点信息以及
 // 针对所有节点的链接。
 type Agent struct {
-	name string
-	host string
-	port uint16
+	name           string
+	host           string
+	port           uint16
 	routineCounter *uint64
-	gpmd base.GPMD
-	lisener *net.TCPListener
-	nodes map[string]*base.Node
-	routines map[base.RoutineId]*base.Routine
-	connections map[string]*net.TCPConn
+	gpmd           base.GPMD
+	lisener        *net.TCPListener
+	nodes          map[string]*base.Node
+	routines       map[base.RoutineId]*base.Routine
+	connections    map[string]*net.TCPConn
 }
 
 // 构建 godist.Agent 对象，返回其指针。
@@ -35,14 +35,14 @@ func New(name string) *Agent {
 	nameAndHost = strings.SplitN(name, "@", 2)
 	return &Agent{
 		routineCounter: &routineCounter,
-		name: nameAndHost[0],
-		host: nameAndHost[1],
+		name:           nameAndHost[0],
+		host:           nameAndHost[1],
 		gpmd: base.GPMD{
 			Host: "",
 			Port: EPMD_PORT,
 		},
-		nodes: make(map[string]*base.Node),
-		routines: make(map[base.RoutineId]*base.Routine),
+		nodes:       make(map[string]*base.Node),
+		routines:    make(map[base.RoutineId]*base.Routine),
 		connections: make(map[string]*net.TCPConn),
 	}
 }

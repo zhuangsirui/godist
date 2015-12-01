@@ -1,9 +1,9 @@
 package godist
 
-import(
-	"testing"
-	"godist/gpmd"
+import (
 	"godist/base"
+	"godist/gpmd"
+	"testing"
 )
 
 var tAgent1, tAgent2, tAgent3 *Agent

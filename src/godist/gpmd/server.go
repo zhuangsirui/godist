@@ -1,20 +1,20 @@
 package gpmd
 
-import(
+import (
 	"net"
 	//"bytes"
+	"encoding/binary"
 	"errors"
 	"godist/base"
-	"encoding/binary"
 )
 
-const(
+const (
 	REQ_REGISTER   = 0x01
 	REQ_UNREGISTER = 0x02
 	REQ_QUERY      = 0x03
 )
 
-const(
+const (
 	ACK_RES_OK             = 0x00
 	ACK_RES_NODE_EXIST     = 0x01
 	ACK_RES_NODE_NOT_EXIST = 0x02
@@ -84,11 +84,11 @@ func handleRegister(request []byte) ([]byte, error) {
 	// 2. name length
 	nameLen := binary.LittleEndian.Uint16(request[2:4])
 	// 3. name
-	name := string(request[4:4+nameLen])
+	name := string(request[4 : 4+nameLen])
 	// 4. host length
-	hostLen := binary.LittleEndian.Uint16(request[4+nameLen:4+nameLen+2])
+	hostLen := binary.LittleEndian.Uint16(request[4+nameLen : 4+nameLen+2])
 	// 5. host
-	host := string(request[4+nameLen+2:4+nameLen+2+hostLen])
+	host := string(request[4+nameLen+2 : 4+nameLen+2+hostLen])
 	ok := register(&base.Node{
 		Port: port,
 		Host: host,
@@ -130,7 +130,7 @@ func handleRegister(request []byte) ([]byte, error) {
  */
 func handleQuery(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[2:2+nameLen])
+	name := string(request[2 : 2+nameLen])
 	node, exist := find(name)
 	if !exist {
 		answer := []byte{ACK_RES_NODE_NOT_EXIST}
@@ -170,7 +170,7 @@ func handleQuery(request []byte) ([]byte, error) {
  */
 func handleUnregister(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[2:2+nameLen])
+	name := string(request[2 : 2+nameLen])
 	ok := unregister(name)
 	var answer []byte
 	var err error
