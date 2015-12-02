@@ -53,8 +53,8 @@ func (agent *Agent) SetGPMD(host string, port uint16) {
 	agent.gpmd.Port = port
 }
 
-// 向本地的 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则
-// 会抛出 panic 。
+// 向 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则会抛出
+// panic 。
 func (agent *Agent) RegisterRoutine(routine *base.Routine) {
 	routine.SetId(agent.incrRoutineId())
 	agent.registerRoutine(routine)

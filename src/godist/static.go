@@ -32,6 +32,13 @@ func Register() {
 	_agent.Register()
 }
 
+// 向本地的 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则
+// 会抛出 panic 。
+func RegisterRoutine(routine *base.Routine) {
+	routine.SetId(_agent.incrRoutineId())
+	_agent.registerRoutine(routine)
+}
+
 // 尝试向另一个节点建立连接。建立好之后会一直保持连接。用于节点之间的 Goroutine
 // 消息收发。
 func ConnectTo(nodeName string) {
