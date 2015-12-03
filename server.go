@@ -55,6 +55,11 @@ func (agent *Agent) Listen() {
 	if agent.lisener == nil {
 		panic(strings.Join(errMessages, "\n"))
 	}
+	agent.registerNode(&base.Node{
+		Name: agent.name,
+		Host: agent.host,
+		Port: agent.port,
+	})
 }
 
 // 接收请求循环。

@@ -50,3 +50,7 @@ func ConnectTo(nodeName string) {
 func CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	_agent.CastTo(nodeName, routineId, message)
 }
+
+func CastToLocal(routineId base.RoutineId, message []byte) {
+	_agent.CastTo(_agent.name, routineId, message)
+}
