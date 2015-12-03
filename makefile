@@ -1,10 +1,9 @@
-LIBS = godist godist/gpmd
-
 all: compile
 
 compile:
-	go build ${LIBS}
+	go build
+	go build ./base
+	go build ./gpmd
 
 test:
-	go get github.com/axw/gocov/gocov
-	gocov test ${LIBS} | gocov report
+	gocov test ./ ./base ./gpmd | gocov report
