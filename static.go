@@ -27,6 +27,10 @@ func SetGPMD(host string, port uint16) {
 	_agent.gpmd.Port = port
 }
 
+func Host() string {
+	return _agent.host
+}
+
 // 向本地 GPMD 注册节点信息，无法注册会 panic 异常。
 func Register() {
 	_agent.Register()

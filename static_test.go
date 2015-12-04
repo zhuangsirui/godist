@@ -10,6 +10,7 @@ var tAgent5 = New(nodeName5)
 
 func TestStaticSetGPMD(t *testing.T) {
 	SetGPMD("localhost", 2613)
+	Host()
 }
 
 func TestStaticInit(t *testing.T) {
