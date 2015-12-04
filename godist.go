@@ -47,6 +47,10 @@ func New(name string) *Agent {
 	}
 }
 
+func (agent *Agent) Host() string {
+	return agent.host
+}
+
 // 设置本机的 GPMD 服务地址。默认为 ":2613"
 func (agent *Agent) SetGPMD(host string, port uint16) {
 	agent.gpmd.Host = host

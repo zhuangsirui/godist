@@ -12,6 +12,7 @@ var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhos
 
 func TestNew(t *testing.T) {
 	tAgent1 = New(nodeName1)
+	tAgent1.Host()
 }
 
 func TestSetGPMD(t *testing.T) {
