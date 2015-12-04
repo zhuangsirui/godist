@@ -1,9 +1,9 @@
+LIBS = ./ ./base ./gpmd
+
 all: compile
 
 compile:
-	go build
-	go build ./base
-	go build ./gpmd
+	go build ${LIBS}
 
 test:
-	gocov test ./ ./base ./gpmd | gocov report
+	gocov test ${LIBS} | gocov report
