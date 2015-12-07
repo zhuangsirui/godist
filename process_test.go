@@ -14,11 +14,12 @@ func TestNewProcess(t *testing.T) {
 	process := tAgent6.NewProcess()
 	process.GetId()
 	replyChann := make(chan []byte)
-	go process.Run(func(message []byte) {
+	go process.Run(func(message []byte) error {
 		if bytes.Compare(message, []byte{'p', 'i', 'n', 'g'}) != 0 {
 			t.Error("message error")
 		}
 		replyChann <- []byte{'p', 'o', 'n', 'g'}
+		return nil
 	})
 	process.Channel <- []byte{'p', 'i', 'n', 'g'}
 	reply := <-replyChann
@@ -31,11 +32,12 @@ func TestStaticNewProcess(t *testing.T) {
 	Init(nodeName7)
 	process := NewProcess()
 	replyChann := make(chan []byte)
-	go process.Run(func(message []byte) {
+	go process.Run(func(message []byte) error {
 		if bytes.Compare(message, []byte{'p', 'i', 'n', 'g'}) != 0 {
 			t.Error("message error")
 		}
 		replyChann <- []byte{'p', 'o', 'n', 'g'}
+		return nil
 	})
 	process.Channel <- []byte{'p', 'i', 'n', 'g'}
 	reply := <-replyChann

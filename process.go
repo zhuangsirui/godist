@@ -38,11 +38,11 @@ func (p *Process) GetId() base.RoutineId {
 	return p.routine.GetId()
 }
 
-func (p *Process) Run(handler func([]byte)) {
+func (p *Process) Run(handler func([]byte) error) {
 	p.run(handler)
 }
 
-func (p *Process) run(handler func([]byte)) {
+func (p *Process) run(handler func([]byte) error) {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -51,6 +51,9 @@ func (p *Process) run(handler func([]byte)) {
 		}
 	}()
 	for {
-		handler(<-p.Channel)
+		if err := handler(<-p.Channel); err != nil {
+			log.Printf("godist.process: Process %d exit. reason: %s", err)
+			break
+		}
 	}
 }
