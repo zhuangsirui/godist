@@ -52,7 +52,7 @@ func (p *Process) run(handler func([]byte) error) {
 	}()
 	for {
 		if err := handler(<-p.Channel); err != nil {
-			log.Printf("godist.process: Process %d exit. reason: %s", err)
+			log.Printf("godist.process: Process %d exit. reason: %s", p.GetId(), err)
 			break
 		}
 	}
