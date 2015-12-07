@@ -14,7 +14,7 @@ func TestNewProcess(t *testing.T) {
 	process := tAgent6.NewProcess()
 	process.GetId()
 	replyChann := make(chan []byte)
-	process.Run(func(message []byte) {
+	go process.Run(func(message []byte) {
 		if bytes.Compare(message, []byte{'p', 'i', 'n', 'g'}) != 0 {
 			t.Error("message error")
 		}
@@ -31,7 +31,7 @@ func TestStaticNewProcess(t *testing.T) {
 	Init(nodeName7)
 	process := NewProcess()
 	replyChann := make(chan []byte)
-	process.Run(func(message []byte) {
+	go process.Run(func(message []byte) {
 		if bytes.Compare(message, []byte{'p', 'i', 'n', 'g'}) != 0 {
 			t.Error("message error")
 		}

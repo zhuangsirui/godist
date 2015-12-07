@@ -1,6 +1,9 @@
 package godist
 
-import "godist/base"
+import (
+	"godist/base"
+	"log"
+)
 
 type Process struct {
 	Channel chan []byte
@@ -36,13 +39,14 @@ func (p *Process) GetId() base.RoutineId {
 }
 
 func (p *Process) Run(handler func([]byte)) {
-	go p.run(handler)
+	p.run(handler)
 }
 
 func (p *Process) run(handler func([]byte)) {
 	defer func() {
 		err := recover()
 		if err != nil {
+			log.Printf("godist: process restart for reason: %s", err)
 			p.run(handler)
 		}
 	}()
