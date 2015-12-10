@@ -47,14 +47,30 @@ func New(name string) *Agent {
 	}
 }
 
-func (agent *Agent) Host() string {
-	return agent.host
+func (a *Agent) Host() string {
+	return a.host
+}
+
+func (a *Agent) Port() uint16 {
+	return a.port
+}
+
+func (a *Agent) Name() string {
+	return a.name
+}
+
+func (a *Agent) Node() *base.Node {
+	return &base.Node{
+		Port: a.Port(),
+		Name: a.Name(),
+		Host: a.Host(),
+	}
 }
 
 // 设置本机的 GPMD 服务地址。默认为 ":2613"
-func (agent *Agent) SetGPMD(host string, port uint16) {
-	agent.gpmd.Host = host
-	agent.gpmd.Port = port
+func (a *Agent) SetGPMD(host string, port uint16) {
+	a.gpmd.Host = host
+	a.gpmd.Port = port
 }
 
 // 向 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则会抛出

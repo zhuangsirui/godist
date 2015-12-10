@@ -13,7 +13,7 @@ func TestStaticSetGPMD(t *testing.T) {
 	Host()
 	Name()
 	Port()
-	LocalNode()
+	Node()
 }
 
 func TestStaticInit(t *testing.T) {
