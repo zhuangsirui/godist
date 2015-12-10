@@ -22,18 +22,6 @@ func (agent *Agent) NewProcess() *Process {
 	}
 }
 
-func NewProcess() *Process {
-	c := make(chan []byte, 10)
-	routine := &base.Routine{
-		Channel: c,
-	}
-	RegisterRoutine(routine)
-	return &Process{
-		Channel: c,
-		routine: routine,
-	}
-}
-
 func (p *Process) GetId() base.RoutineId {
 	return p.routine.GetId()
 }

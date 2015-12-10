@@ -55,6 +55,19 @@ func RegisterRoutine(routine *base.Routine) {
 	_agent.registerRoutine(routine)
 }
 
+// 启动一个新的 Process 。返回 Process 的指针。
+func NewProcess() *Process {
+	c := make(chan []byte, 10)
+	routine := &base.Routine{
+		Channel: c,
+	}
+	RegisterRoutine(routine)
+	return &Process{
+		Channel: c,
+		routine: routine,
+	}
+}
+
 // 尝试向另一个节点建立连接。建立好之后会一直保持连接。用于节点之间的 Goroutine
 // 消息收发。
 func ConnectTo(nodeName string) {
