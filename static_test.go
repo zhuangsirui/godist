@@ -12,6 +12,8 @@ func TestStaticSetGPMD(t *testing.T) {
 	SetGPMD("localhost", 2613)
 	Host()
 	Name()
+	Port()
+	LocalNode()
 }
 
 func TestStaticInit(t *testing.T) {

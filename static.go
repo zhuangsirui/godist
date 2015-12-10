@@ -31,8 +31,20 @@ func Host() string {
 	return _agent.host
 }
 
+func Port() uint16 {
+	return _agent.port
+}
+
 func Name() string {
 	return _agent.name
+}
+
+func LocalNode() *base.Node {
+	return &base.Node{
+		Port: Port(),
+		Host: Host(),
+		Name: Name(),
+	}
 }
 
 // 向本地 GPMD 注册节点信息，无法注册会 panic 异常。
