@@ -4,7 +4,7 @@ import (
 	"godist/base"
 )
 
-var _agent = &Agent{}
+var _agent *Agent
 
 // 在本进程运行一个 agent 服务。该服务保存了自身进程中向他注册的所有 Goroutine
 // 的消息通道。
