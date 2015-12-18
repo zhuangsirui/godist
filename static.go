@@ -19,6 +19,7 @@ func Init(name string) {
 	_agent = New(name)
 	_agent.Listen()
 	go _agent.Serve()
+	_agent.Register()
 }
 
 // 设置本机的 GPMD 服务地址。默认为 ":2613"
@@ -43,11 +44,6 @@ func Node() *base.Node {
 	return _agent.Node()
 }
 
-// 向本地 GPMD 注册节点信息，无法注册会 panic 异常。
-func Register() {
-	_agent.Register()
-}
-
 // 向本地的 agent 注册一个 Goroutine 。如果该 Goroutine 对象已经被设置过 Id ，则
 // 会抛出 panic 。
 func RegisterRoutine(routine *base.Routine) {
@@ -66,6 +62,10 @@ func NewProcess() *Process {
 		Channel: c,
 		routine: routine,
 	}
+}
+
+func QueryAllNode(nodeName string) {
+	_agent.QueryAllNode(nodeName)
 }
 
 // 尝试向另一个节点建立连接。建立好之后会一直保持连接。用于节点之间的 Goroutine

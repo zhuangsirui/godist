@@ -20,10 +20,6 @@ func TestStaticInit(t *testing.T) {
 	Init(nodeName4)
 }
 
-func TestStaticRegisterToGPMD(t *testing.T) {
-	Register()
-}
-
 func TestStaticConnectTo(t *testing.T) {
 	tAgent5.Listen()
 	go tAgent5.Serve()

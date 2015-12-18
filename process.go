@@ -11,7 +11,7 @@ type Process struct {
 }
 
 func (agent *Agent) NewProcess() *Process {
-	c := make(chan []byte, 10)
+	c := make(chan []byte, 100)
 	routine := &base.Routine{
 		Channel: c,
 	}

@@ -3,6 +3,7 @@ package gpmd
 import (
 	"fmt"
 	"godist/base"
+	"log"
 	"net"
 )
 
@@ -32,6 +33,7 @@ func Init() {
 		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
 		panic(panicInfo)
 	}
+	log.Printf("GPMD started on %s", listener.Addr())
 	go acceptLoop(listener)
 }
 
@@ -54,6 +56,7 @@ func register(node *base.Node) bool {
 	_, exist := m.nodes[node.Name]
 	if !exist {
 		m.nodes[node.Name] = node
+		log.Printf("Node %s register success", node.Name)
 	}
 	return !exist
 }
@@ -68,13 +71,15 @@ func unregister(name string) bool {
 
 func acceptLoop(listener *net.TCPListener) {
 	for {
-		conn, acceptErr := listener.AcceptTCP()
-		if acceptErr != nil {
+		conn, err := listener.AcceptTCP()
+		if err != nil {
 			// TODO handle accept error
+			log.Printf("Accept error %s", err)
 			break
 		}
-		defer conn.Close()
 		// 同步调用，原子性处理各个节点的请求
+		log.Printf("Handle connection...")
 		handleConnection(conn)
+		conn.Close()
 	}
 }

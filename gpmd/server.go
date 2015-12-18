@@ -1,6 +1,7 @@
 package gpmd
 
 import (
+	"log"
 	"net"
 	//"bytes"
 	"encoding/binary"
@@ -48,6 +49,7 @@ func handleConnection(conn *net.TCPConn) error {
  * 在回应之前统一加上 `REQUEST CODE` 。
  */
 func dispatchRequest(code byte, request []byte) ([]byte, error) {
+	log.Printf("Code %d request: %v", code, request)
 	var answer []byte
 	var err error
 	switch code {

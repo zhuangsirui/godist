@@ -1,6 +1,7 @@
 package godist
 
 import (
+	"log"
 	"net"
 	//"errors"
 	"encoding/binary"
@@ -125,6 +126,7 @@ func (agent *Agent) Register() {
 
 // 向目标 Goroutine 发送消息。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
+	log.Printf("Cast to %d@%s message...", uint64(routineId), nodeName)
 	if conn, exist := agent.connections[nodeName]; exist {
 		request := []byte{REQ_CAST}
 		// 1. routine id
@@ -333,6 +335,7 @@ func (agent *Agent) ConnectTo(nodeName string) {
 			return
 		}
 		agent.connections[name] = conn
+		log.Printf("Node %s connected...", name)
 	}
 }
 
@@ -354,6 +357,7 @@ func (agent *Agent) connExist(name string) bool {
 func (agent *Agent) registerNode(node *base.Node) {
 	if _, exist := agent.nodes[node.Name]; !exist {
 		agent.nodes[node.Name] = node
+		log.Printf("Node %s register...", node.Name)
 	}
 }
 
