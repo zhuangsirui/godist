@@ -1,12 +1,11 @@
 package gpmd
 
 import (
-	"log"
-	"net"
-	//"bytes"
 	"encoding/binary"
 	"errors"
 	"godist/base"
+	"log"
+	"net"
 )
 
 const (

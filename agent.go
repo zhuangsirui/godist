@@ -1,13 +1,12 @@
 package godist
 
 import (
-	"log"
-	"net"
-	//"errors"
 	"encoding/binary"
 	"fmt"
 	"godist/base"
 	"godist/gpmd"
+	"log"
+	"net"
 	"strings"
 	"sync/atomic"
 )
