@@ -19,32 +19,33 @@ var routineCounter uint64
 // Agent 结构持有本节点所有注册过的 Goroutine 对象，所有在集群中的节点信息以及
 // 针对所有节点的链接。
 type Agent struct {
+	gpmd           base.GPMD
 	name           string
 	host           string
 	port           uint16
-	routineCounter *uint64
-	gpmd           base.GPMD
-	lisener        *net.TCPListener
 	nodes          map[string]*base.Node
 	routines       map[base.RoutineId]*base.Routine
 	connections    map[string]*net.TCPConn
+	listener       *net.TCPListener
+	routineCounter *uint64
 }
 
 // 构建 godist.Agent 对象，返回其指针。
 func New(name string) *Agent {
 	nameAndHost := make([]string, 2)
 	nameAndHost = strings.SplitN(name, "@", 2)
+	gpmd := base.GPMD{
+		Host: "",
+		Port: EPMD_PORT,
+	}
 	return &Agent{
-		routineCounter: &routineCounter,
+		gpmd:           gpmd,
 		name:           nameAndHost[0],
 		host:           nameAndHost[1],
-		gpmd: base.GPMD{
-			Host: "",
-			Port: EPMD_PORT,
-		},
-		nodes:       make(map[string]*base.Node),
-		routines:    make(map[base.RoutineId]*base.Routine),
-		connections: make(map[string]*net.TCPConn),
+		nodes:          make(map[string]*base.Node),
+		routines:       make(map[base.RoutineId]*base.Routine),
+		connections:    make(map[string]*net.TCPConn),
+		routineCounter: &routineCounter,
 	}
 }
 
@@ -124,38 +125,6 @@ func (agent *Agent) Register() {
 	}
 }
 
-// 向目标 Goroutine 发送消息。
-func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
-	log.Printf("Cast to %d@%s message...", uint64(routineId), nodeName)
-	if conn, exist := agent.connections[nodeName]; exist {
-		request := []byte{REQ_CAST}
-		// 1. routine id
-		routineIdBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(routineIdBuffer, uint64(routineId))
-		request = append(request, routineIdBuffer...)
-		// 2. message length
-		messageLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(messageLengthBuffer, uint64(len(message)))
-		request = append(request, messageLengthBuffer...)
-		// 3. message
-		request = append(request, message...)
-		// 4. add length prefix
-		requestLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(requestLengthBuffer, uint64(len(request)))
-		request = append(requestLengthBuffer, request...)
-		if _, wErr := conn.Write(request); wErr != nil {
-			return
-		}
-		ackBuffer := make([]byte, 1)
-		if _, rErr := conn.Read(ackBuffer); rErr != nil {
-			return
-		}
-		if ackBuffer[0] != ACK_CAST_OK {
-			return
-		}
-	}
-}
-
 func (agent *Agent) QueryAllNode(nodeName string) {
 	name, _ := parseNameAndHost(nodeName)
 	if conn, exist := agent.connections[name]; exist {
@@ -221,7 +190,8 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 	}
 }
 
-// 查询目标节点的详细信息。
+// 向目标节点的 GPMD 查询节点的端口号等详细信息。
+//  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) QueryNode(nodeName string) {
 	name, host := parseNameAndHost(nodeName)
 	if !agent.nodeExist(name) {
@@ -283,8 +253,11 @@ func (agent *Agent) QueryNode(nodeName string) {
 	}
 }
 
-// 尝试向另一个节点建立连接。建立好之后会一直保持持有连接。用于节点之间的
-// Goroutine 消息收发。
+// XXX: 权衡参数传入格式是否需要是节点全名(xx@xx)还是节点名(xx)即可。
+//
+// 尝试向目标节点建立连接。该节点名称必须在 `agent.nodes` 中有注册的信息。建立好
+// 之后会一直保持持有连接。用于向目标节点的 Goroutine 消息发送。
+//  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) ConnectTo(nodeName string) {
 	name, _ := parseNameAndHost(nodeName)
 	if node, exist := agent.nodes[name]; exist {
@@ -336,6 +309,39 @@ func (agent *Agent) ConnectTo(nodeName string) {
 		}
 		agent.connections[name] = conn
 		log.Printf("Node %s connected...", name)
+	}
+}
+
+// 向目标 Goroutine 发送消息。该目标节点连接必须事先注册在 `agent.connections`
+// 中。
+func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
+	log.Printf("Cast to %d@%s message...", uint64(routineId), nodeName)
+	if conn, exist := agent.connections[nodeName]; exist {
+		request := []byte{REQ_CAST}
+		// 1. routine id
+		routineIdBuffer := make([]byte, 8)
+		binary.LittleEndian.PutUint64(routineIdBuffer, uint64(routineId))
+		request = append(request, routineIdBuffer...)
+		// 2. message length
+		messageLengthBuffer := make([]byte, 8)
+		binary.LittleEndian.PutUint64(messageLengthBuffer, uint64(len(message)))
+		request = append(request, messageLengthBuffer...)
+		// 3. message
+		request = append(request, message...)
+		// 4. add length prefix
+		requestLengthBuffer := make([]byte, 8)
+		binary.LittleEndian.PutUint64(requestLengthBuffer, uint64(len(request)))
+		request = append(requestLengthBuffer, request...)
+		if _, wErr := conn.Write(request); wErr != nil {
+			return
+		}
+		ackBuffer := make([]byte, 1)
+		if _, rErr := conn.Read(ackBuffer); rErr != nil {
+			return
+		}
+		if ackBuffer[0] != ACK_CAST_OK {
+			return
+		}
 	}
 }
 

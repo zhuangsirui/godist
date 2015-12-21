@@ -24,12 +24,13 @@ const (
 
 var PORTS = []uint16{
 	26130, 26131, 26132, 26133, 26134, 26135, 26136, 26137, 26138, 26139,
+	9190, 9191, 9192, 9193, 9194, 9195, 9196, 9197, 9198, 9199,
 }
 
 // 监听目标端口。
 func (agent *Agent) Listen() {
 	var errMessages []string
-	agent.lisener = nil
+	agent.listener = nil
 	for _, port := range PORTS {
 		agent.port = port
 		listenStr := fmt.Sprintf("%s:%d", agent.host, agent.port)
@@ -41,7 +42,7 @@ func (agent *Agent) Listen() {
 			)
 			continue
 		}
-		lisener, lErr := net.ListenTCP("tcp", listenAddr)
+		listener, lErr := net.ListenTCP("tcp", listenAddr)
 		if lErr != nil {
 			errMessages = append(
 				errMessages,
@@ -49,23 +50,19 @@ func (agent *Agent) Listen() {
 			)
 			continue
 		}
-		agent.lisener = lisener
+		agent.listener = listener
 		break
 	}
-	if agent.lisener == nil {
+	if agent.listener == nil {
 		panic(strings.Join(errMessages, "\n"))
 	}
-	agent.registerNode(&base.Node{
-		Name: agent.name,
-		Host: agent.host,
-		Port: agent.port,
-	})
+	agent.registerNode(agent.Node())
 }
 
 // 接收请求循环。
 func (agent *Agent) Serve() {
 	for {
-		conn, aErr := agent.lisener.AcceptTCP()
+		conn, aErr := agent.listener.AcceptTCP()
 		if aErr != nil {
 			// handle accept error
 			continue
