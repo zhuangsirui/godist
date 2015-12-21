@@ -21,6 +21,21 @@ const (
 	ACK_RES_NODE_NOT_EXIST = 0x02
 )
 
+func (m *Manager) acceptLoop(listener *net.TCPListener) {
+	for {
+		conn, err := listener.AcceptTCP()
+		if err != nil {
+			// TODO handle accept error
+			log.Printf("Accept error %s", err)
+			break
+		}
+		// 同步调用，原子性处理各个节点的请求
+		log.Printf("Handle connection...")
+		m.handleConnection(conn)
+		conn.Close()
+	}
+}
+
 /**
  * Request message described
  * +----------------------------+
@@ -29,7 +44,7 @@ const (
  * | 2      | 1    | length - 1 |
  * +----------------------------+
  */
-func handleConnection(conn *net.TCPConn) error {
+func (m *Manager) handleConnection(conn *net.TCPConn) error {
 	lengthBuffer := make([]byte, 2)
 	if _, err := conn.Read(lengthBuffer); err != nil {
 		return err
@@ -40,7 +55,7 @@ func handleConnection(conn *net.TCPConn) error {
 		return err
 	}
 	code, request := requestBuffer[0], requestBuffer[1:]
-	answer, err := dispatchRequest(code, request)
+	answer, err := m.dispatchRequest(code, request)
 	conn.Write(answer)
 	return err
 }
@@ -48,17 +63,17 @@ func handleConnection(conn *net.TCPConn) error {
 /**
  * 在回应之前统一加上 `REQUEST CODE` 。
  */
-func dispatchRequest(code byte, request []byte) ([]byte, error) {
+func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
 	log.Printf("Code %d request: %v", code, request)
 	var answer []byte
 	var err error
 	switch code {
 	case REQ_REGISTER:
-		answer, err = handleRegister(request)
+		answer, err = m.handleRegister(request)
 	case REQ_UNREGISTER:
-		answer, err = handleUnregister(request)
+		answer, err = m.handleUnregister(request)
 	case REQ_QUERY:
-		answer, err = handleQuery(request)
+		answer, err = m.handleQuery(request)
 	default:
 		// ignore
 	}
@@ -80,7 +95,7 @@ func dispatchRequest(code byte, request []byte) ([]byte, error) {
  * | 1      |
  * +--------+
  */
-func handleRegister(request []byte) ([]byte, error) {
+func (m *Manager) handleRegister(request []byte) ([]byte, error) {
 	// 1. port
 	port := binary.LittleEndian.Uint16(request[:2])
 	// 2. name length
@@ -91,7 +106,7 @@ func handleRegister(request []byte) ([]byte, error) {
 	hostLen := binary.LittleEndian.Uint16(request[4+nameLen : 4+nameLen+2])
 	// 5. host
 	host := string(request[4+nameLen+2 : 4+nameLen+2+hostLen])
-	ok := register(&base.Node{
+	ok := m.register(&base.Node{
 		Port: port,
 		Host: host,
 		Name: name,
@@ -130,10 +145,10 @@ func handleRegister(request []byte) ([]byte, error) {
  * | 1      | 2    | 2           | name length |
  * +-------------------------------------------+
  */
-func handleQuery(request []byte) ([]byte, error) {
+func (m *Manager) handleQuery(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2 : 2+nameLen])
-	node, exist := find(name)
+	node, exist := m.find(name)
 	if !exist {
 		answer := []byte{ACK_RES_NODE_NOT_EXIST}
 		return answer, errors.New("node not exists")
@@ -170,10 +185,10 @@ func handleQuery(request []byte) ([]byte, error) {
  * | 1      |
  * +--------+
  */
-func handleUnregister(request []byte) ([]byte, error) {
+func (m *Manager) handleUnregister(request []byte) ([]byte, error) {
 	nameLen := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2 : 2+nameLen])
-	ok := unregister(name)
+	ok := m.unregister(name)
 	var answer []byte
 	var err error
 	if ok {
