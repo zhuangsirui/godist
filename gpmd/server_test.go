@@ -254,3 +254,7 @@ func TestUnregister2(t *testing.T) {
 		t.Error("ack error")
 	}
 }
+
+func TestStop(t *testing.T) {
+	Stop()
+}

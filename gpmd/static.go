@@ -16,8 +16,12 @@ func SetHost(host string) {
 	_host = host
 }
 
-// 舒适话 GPMD 服务。
+// 初始化 GPMD 服务。
 func Init() {
 	_manager = New(_host, _port)
 	_manager.Serve()
+}
+
+func Stop() {
+	_manager.Stop()
 }

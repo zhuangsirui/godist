@@ -20,9 +20,9 @@ const (
 	ACK_RES_NODE_NOT_EXIST = 0x02
 )
 
-func (m *Manager) acceptLoop(listener *net.TCPListener) {
+func (m *Manager) acceptLoop() {
 	for {
-		conn, err := listener.AcceptTCP()
+		conn, err := m.listener.AcceptTCP()
 		if err != nil {
 			// TODO handle accept error
 			log.Printf("Accept error %s", err)

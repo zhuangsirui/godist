@@ -9,9 +9,10 @@ import (
 
 // GPMD Manager 对象。保持本机的所有节点，以及向外部节点提供查询服务。
 type Manager struct {
-	port  uint16
-	host  string
-	nodes map[string]*base.Node
+	port     uint16
+	host     string
+	nodes    map[string]*base.Node
+	listener *net.TCPListener
 }
 
 // 创建一个 GPMD 实例。
@@ -37,8 +38,13 @@ func (m *Manager) Serve() {
 		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
 		panic(panicInfo)
 	}
-	log.Printf("GPMD started on %s", listener.Addr())
-	go m.acceptLoop(listener)
+	m.listener = listener
+	log.Printf("GPMD started on %s", m.listener.Addr())
+	go m.acceptLoop()
+}
+
+func (m *Manager) Stop() {
+	m.listener.Close()
 }
 
 func (m *Manager) find(name string) (*base.Node, bool) {
