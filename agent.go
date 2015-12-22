@@ -126,6 +126,9 @@ func (agent *Agent) Register() {
 
 func (agent *Agent) QueryAllNode(nodeName string) {
 	name, _ := parseNameAndHost(nodeName)
+	if name == agent.name {
+		return
+	}
 	if conn, exist := agent.connections[name]; exist {
 		// REQUEST
 		request := []byte{REQ_QUERY_ALL}
@@ -193,6 +196,9 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 //  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) QueryNode(nodeName string) {
 	name, host := parseNameAndHost(nodeName)
+	if name == agent.name {
+		return
+	}
 	if !agent.nodeExist(name) {
 		gpmdAddr, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf(
 			"%s:%d", host, agent.gpmd.Port,
@@ -259,6 +265,9 @@ func (agent *Agent) QueryNode(nodeName string) {
 //  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) ConnectTo(nodeName string) {
 	name, _ := parseNameAndHost(nodeName)
+	if name == agent.name {
+		return
+	}
 	if node, exist := agent.nodes[name]; exist {
 		address, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", node.Host, node.Port))
 		if rErr != nil {
@@ -306,15 +315,14 @@ func (agent *Agent) ConnectTo(nodeName string) {
 			conn.Close()
 			return
 		}
-		agent.connections[name] = conn
-		log.Printf("Node %s connected...", name)
+		agent.registerConn(name, conn)
 	}
 }
 
 // 向目标 Goroutine 发送消息。该目标节点连接必须事先注册在 `agent.connections`
 // 中。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
-	log.Printf("Cast to %d@%s message...", uint64(routineId), nodeName)
+	log.Printf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if conn, exist := agent.connections[nodeName]; exist {
 		request := []byte{REQ_CAST}
 		// 1. routine id
@@ -362,7 +370,17 @@ func (agent *Agent) connExist(name string) bool {
 func (agent *Agent) registerNode(node *base.Node) {
 	if _, exist := agent.nodes[node.Name]; !exist {
 		agent.nodes[node.Name] = node
-		log.Printf("Node %s register...", node.Name)
+		log.Printf("godist: Node %s register...", node.Name)
+	}
+}
+
+func (agent *Agent) registerConn(name string, conn *net.TCPConn) {
+	if _, exist := agent.connections[name]; !exist {
+		agent.connections[name] = conn
+		log.Printf("godist: Hoding node %s connection", name)
+	} else {
+		conn.Close()
+		log.Printf("godist: connection of node %s is duplicate. Connection closed", name)
 	}
 }
 
