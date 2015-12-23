@@ -39,3 +39,7 @@ func TestStaticCastTo(t *testing.T) {
 	go CastTo(name, routine.GetId(), []byte{'p', 'i', 'n', 'g'})
 	<-c
 }
+
+func TestStaticStop(t *testing.T) {
+	Stop()
+}

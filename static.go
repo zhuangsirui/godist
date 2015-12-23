@@ -22,6 +22,10 @@ func Init(name string) {
 	_agent.Register()
 }
 
+func Stop() {
+	_agent.Stop()
+}
+
 // 设置本机的 GPMD 服务地址。默认为 ":2613"
 func SetGPMD(host string, port uint16) {
 	_agent.gpmd.Host = host

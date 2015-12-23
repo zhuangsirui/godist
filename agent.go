@@ -30,9 +30,9 @@ type Agent struct {
 }
 
 // 构建 godist.Agent 对象，返回其指针。
-func New(name string) *Agent {
+func New(node string) *Agent {
 	nameAndHost := make([]string, 2)
-	nameAndHost = strings.SplitN(name, "@", 2)
+	nameAndHost = strings.SplitN(node, "@", 2)
 	gpmd := base.GPMD{
 		Host: "",
 		Port: EPMD_PORT,
@@ -79,6 +79,43 @@ func (a *Agent) SetGPMD(host string, port uint16) {
 func (agent *Agent) RegisterRoutine(routine *base.Routine) {
 	routine.SetId(agent.incrRoutineId())
 	agent.registerRoutine(routine)
+}
+
+func (agent *Agent) Stop() {
+	agent.listener.Close()
+	agent.Unregister()
+}
+
+func (agent *Agent) Unregister() {
+	resolvedAddr, rErr := net.ResolveTCPAddr("tcp", agent.gpmd.Address())
+	if rErr != nil {
+		panic(fmt.Sprintf("godist: GPMD address error: %s", rErr))
+	}
+	conn, dErr := net.DialTCP("tcp", nil, resolvedAddr)
+	if dErr != nil {
+		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
+	}
+	request := []byte{gpmd.REQ_UNREGISTER}
+	// 1. name length
+	nameLengthBuffer := make([]byte, 2)
+	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
+	request = append(request, nameLengthBuffer...)
+	// 2. name
+	request = append(request, []byte(agent.name)...)
+	// 3. add length prefix
+	requestLengthBuffer := make([]byte, 2)
+	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
+	request = append(requestLengthBuffer, request...)
+	if _, wErr := conn.Write(request); wErr != nil {
+		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))
+	}
+	ackBuffer := make([]byte, 2)
+	if _, rErr := conn.Read(ackBuffer); rErr != nil {
+		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
+	}
+	if ackBuffer[0] != gpmd.REQ_UNREGISTER || ackBuffer[1] != gpmd.ACK_RES_OK {
+		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
+	}
 }
 
 // 向本地 GPMD 注册节点信息，无法注册会 panic 异常。

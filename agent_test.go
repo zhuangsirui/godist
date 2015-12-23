@@ -101,3 +101,10 @@ func TestQueryAll(t *testing.T) {
 		t.Error("Node 1 dosen't connect automatic")
 	}
 }
+
+func TestStop(t *testing.T) {
+	_a := New("testAgentForStop@localhost")
+	_a.Listen()
+	go _a.Serve()
+	_a.Stop()
+}
