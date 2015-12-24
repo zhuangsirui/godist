@@ -301,6 +301,10 @@ func (agent *Agent) QueryNode(nodeName string) {
 // 之后会一直保持持有连接。用于向目标节点的 Goroutine 消息发送。
 //  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) ConnectTo(nodeName string) {
+	agent.connectTo(nodeName, false)
+}
+
+func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 	name, _ := parseNameAndHost(nodeName)
 	if name == agent.name {
 		return
@@ -318,6 +322,12 @@ func (agent *Agent) ConnectTo(nodeName string) {
 			return
 		}
 		request := []byte{REQ_CONN}
+		// 0. is return
+		if isReturn {
+			request = append(request, ACK_CONN_IS_RETURN)
+		} else {
+			request = append(request, ACK_CONN_IS_NOT_RETURN)
+		}
 		// 1. port
 		portBuffer := make([]byte, 2)
 		binary.LittleEndian.PutUint16(portBuffer, agent.port)
@@ -412,13 +422,13 @@ func (agent *Agent) registerNode(node *base.Node) {
 }
 
 func (agent *Agent) registerConn(name string, conn *net.TCPConn) {
-	if _, exist := agent.connections[name]; !exist {
-		agent.connections[name] = conn
-		log.Printf("godist: Hoding node %s connection", name)
-	} else {
-		conn.Close()
-		log.Printf("godist: connection of node %s is duplicate. Connection closed", name)
+	oldConn, exist := agent.connections[name]
+	if exist {
+		log.Printf("godist: Close the old connection of node %s", name)
+		oldConn.Close()
 	}
+	agent.connections[name] = conn
+	log.Printf("godist: Hoding node %s connection", name)
 }
 
 func (agent *Agent) registerRoutine(routine *base.Routine) {

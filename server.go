@@ -20,6 +20,8 @@ const (
 	ACK_CAST_ROUTINE_NOT_FOUND = 0x04
 	ACK_QUERY_ALL_OK           = 0x05
 	ACK_QUERY_ALL_ERR          = 0x06
+	ACK_CONN_IS_RETURN         = 0x07
+	ACK_CONN_IS_NOT_RETURN     = 0x08
 )
 
 var PORTS = []uint16{
@@ -121,11 +123,11 @@ func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {
 }
 
 // Connect message described
-// +----------------------------------------------+
-// | port | nameLen | name    | hostLen | host    |
-// |----------------------------------------------|
-// | 2    | 2       | nameLen | 2       | hostLen |
-// +----------------------------------------------+
+// +----------------------------------------------------------+
+// | port | nameLen | name    | hostLen | host    | is return |
+// |----------------------------------------------|-----------|
+// | 2    | 2       | nameLen | 2       | hostLen | 1         |
+// +----------------------------------------------------------+
 //
 // Answer message described
 // +--------+
@@ -134,6 +136,9 @@ func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
+	// 0. is return
+	var isReturn byte
+	isReturn, request = request[0], request[1:]
 	// 1. port
 	port := binary.LittleEndian.Uint16(request[:2])
 	// 2. name length
@@ -150,8 +155,8 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 		Port: port,
 	}
 	agent.registerNode(node)
-	if !agent.connExist(name) {
-		go agent.ConnectTo(node.FullName())
+	if isReturn != ACK_CONN_IS_RETURN {
+		go agent.connectTo(node.FullName(), true)
 	}
 	return []byte{ACK_CONN_OK}, nil
 }
