@@ -3,6 +3,7 @@ package godist
 import (
 	"godist/base"
 	"log"
+	"runtime/debug"
 )
 
 type Process struct {
@@ -34,7 +35,7 @@ func (p *Process) run(handler func([]byte) error) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Printf("godist: process restart for reason: %s", err)
+			log.Printf("godist: process restart for reason: %s\n%s", err, debug.Stack())
 			p.run(handler)
 		}
 	}()
