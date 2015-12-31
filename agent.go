@@ -318,7 +318,6 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 		conn, dErr := net.DialTCP("tcp", nil, address)
 		if dErr != nil {
 			// handle error
-			conn.Close()
 			return
 		}
 		request := []byte{REQ_CONN}
