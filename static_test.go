@@ -14,6 +14,7 @@ func TestStaticSetGPMD(t *testing.T) {
 	Name()
 	Port()
 	Node()
+	NewProcess()
 }
 
 func TestStaticInit(t *testing.T) {
@@ -25,6 +26,7 @@ func TestStaticConnectTo(t *testing.T) {
 	go tAgent5.Serve()
 	tAgent5.Register()
 	ConnectTo(nodeName5)
+	QueryAllNode(nodeName5)
 }
 
 func TestStaticCastTo(t *testing.T) {
@@ -42,4 +44,10 @@ func TestStaticCastTo(t *testing.T) {
 
 func TestStaticStop(t *testing.T) {
 	Stop()
+}
+
+func TestCastToLocal(t *testing.T) {
+	p := NewProcess()
+	go CastToLocal(p.routine.GetId(), []byte{'p', 'i', 'n', 'g'})
+	<-p.Channel
 }
