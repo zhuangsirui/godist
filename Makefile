@@ -8,3 +8,6 @@ compile:
 
 test:
 	gocov test ${LIBS} | gocov report
+
+deps:
+	go get -u github.com/stretchr/testify/assert
