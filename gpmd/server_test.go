@@ -2,10 +2,12 @@ package gpmd
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
+	"godist/binary/packer"
 	"net"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -32,227 +34,123 @@ func TestInit(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	request := []byte{REQ_REGISTER}
-	// 1. port
-	portBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(portBuffer, 26130)
-	request = append(request, portBuffer...)
-	// 2. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("agent_name")))
-	request = append(request, nameLengthBuffer...)
-	// 3. name
-	request = append(request, []byte("agent_name")...)
-	// 4. host length
-	hostLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(hostLengthBuffer, uint16(len(testHost)))
-	request = append(request, hostLengthBuffer...)
-	// 5. host
-	request = append(request, []byte(testHost)...)
-	// 6. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_REGISTER).
+		PushUint16(20130).
+		PushUint16(uint16(len("agent_name"))).
+		PushString("agent_name").
+		PushUint16(uint16(len(testHost))).
+		PushString(testHost)
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_REGISTER, ACK_RES_OK}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_REGISTER, ACK_RES_OK}, "Ack Error.")
 }
 
 func TestRegisterAnExistNode(t *testing.T) {
-	request := []byte{REQ_REGISTER}
-	// 1. port
-	portBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(portBuffer, 26130)
-	request = append(request, portBuffer...)
-	// 2. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("agent_name")))
-	request = append(request, nameLengthBuffer...)
-	// 3. name
-	request = append(request, []byte("agent_name")...)
-	// 4. host length
-	hostLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(hostLengthBuffer, uint16(len(testHost)))
-	request = append(request, hostLengthBuffer...)
-	// 5. host
-	request = append(request, []byte(testHost)...)
-	// 6. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_REGISTER).
+		PushUint16(26130).
+		PushUint16(uint16(len("agent_name"))).
+		PushString("agent_name").
+		PushUint16(uint16(len(testHost))).
+		PushString(testHost)
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_REGISTER, ACK_RES_NODE_EXIST}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_REGISTER, ACK_RES_NODE_EXIST}, "Ack Error.")
 }
 
 func TestQuery(t *testing.T) {
-	request := []byte{REQ_QUERY}
-	// 1. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("agent_name")))
-	request = append(request, nameLengthBuffer...)
-	// 2. name
-	request = append(request, []byte("agent_name")...)
-	// 3. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_QUERY).
+		PushUint16(uint16(len("agent_name"))).
+		PushString("agent_name")
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_QUERY, ACK_RES_OK}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_QUERY, ACK_RES_OK}, "Ack Error.")
 }
 
 func TestQueryNotExist(t *testing.T) {
-	request := []byte{REQ_QUERY}
-	// 1. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("not_exist_name")))
-	request = append(request, nameLengthBuffer...)
-	// 2. name
-	request = append(request, []byte("not_exist_name")...)
-	// 3. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_QUERY).
+		PushUint16(uint16(len("fake_name"))).
+		PushString("fake_name")
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_QUERY, ACK_RES_NODE_NOT_EXIST}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_QUERY, ACK_RES_NODE_NOT_EXIST}, "Ack Error.")
 }
 
 func TestUnregister(t *testing.T) {
-	request := []byte{REQ_UNREGISTER}
-	// 1. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("agent_name")))
-	request = append(request, nameLengthBuffer...)
-	// 2. name
-	request = append(request, []byte("agent_name")...)
-	// 3. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_UNREGISTER).
+		PushUint16(uint16(len("agent_name"))).
+		PushString("agent_name")
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_UNREGISTER, ACK_RES_OK}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_UNREGISTER, ACK_RES_OK}, "Ack Error.")
 }
 
 func TestUnregister2(t *testing.T) {
-	request := []byte{REQ_UNREGISTER}
-	// 1. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len("agent_name")))
-	request = append(request, nameLengthBuffer...)
-	// 2. name
-	request = append(request, []byte("agent_name")...)
-	// 6. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(REQ_UNREGISTER).
+		PushUint16(uint16(len("agent_name"))).
+		PushString("agent_name")
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
-	if err != nil {
-		t.Error(err)
-	}
-	conn, dErr := net.DialTCP("tcp", nil, address)
-	if dErr != nil {
-		t.Error(dErr)
-	}
-	_, wErr := conn.Write(request)
-	if wErr != nil {
-		t.Error(dErr)
-	}
-	ackBuffer := make([]byte, 2)
-	_, rErr := conn.Read(ackBuffer)
-	if rErr != nil {
-		t.Error(rErr)
-	}
-	if bytes.Compare(ackBuffer, []byte{REQ_UNREGISTER, ACK_RES_NODE_NOT_EXIST}) != 0 {
-		t.Error("ack error")
-	}
+	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
+	conn, err := net.DialTCP("tcp", nil, address)
+	assert.Equal(t, err, nil, "DialTCP Error.")
+	_, err = conn.Write(request)
+	assert.Equal(t, err, nil, "Write Error.")
+	ack := make([]byte, 2)
+	_, err = conn.Read(ack)
+	assert.Equal(t, err, nil, "Read Error.")
+	assert.Equal(t, ack, []byte{REQ_UNREGISTER, ACK_RES_NODE_NOT_EXIST}, "Ack Error.")
 }
 
 func TestStop(t *testing.T) {
