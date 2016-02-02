@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"godist/base"
-	"godist/binary/packer"
 	"net"
 	"strings"
+
+	"github.com/zhuangsirui/binpacker"
 )
 
 const (
@@ -138,7 +139,7 @@ func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
-	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
 	var isReturn byte
 	var port uint16
 	var name, host string
@@ -179,7 +180,7 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 	if agent.nodeExist(name) {
 		var nodeCount uint16 = 0
 		requestBuf := new(bytes.Buffer)
-		pk := packer.NewPacker(requestBuf).
+		pk := binpacker.NewPacker(requestBuf).
 			PushByte(ACK_QUERY_ALL_OK).
 			PushUint16(uint16(len(agent.nodes)))
 		for _, node := range agent.nodes {
@@ -211,7 +212,7 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 func (agent *Agent) handleCast(request []byte) ([]byte, error) {
 	var routineId uint64
 	var message []byte
-	packer.NewUnpacker(bytes.NewBuffer(request)).
+	binpacker.NewUnpacker(bytes.NewBuffer(request)).
 		ReadUint64(&routineId).
 		BytesWithUint64Perfix(&message)
 	if routine, exist := agent.find(base.RoutineId(routineId)); exist {

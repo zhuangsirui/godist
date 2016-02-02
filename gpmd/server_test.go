@@ -3,11 +3,11 @@ package gpmd
 import (
 	"bytes"
 	"fmt"
-	"godist/binary/packer"
 	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/zhuangsirui/binpacker"
 )
 
 const (
@@ -35,14 +35,14 @@ func TestInit(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_REGISTER).
 		PushUint16(20130).
 		PushUint16(uint16(len("agent_name"))).
 		PushString("agent_name").
 		PushUint16(uint16(len(testHost))).
 		PushString(testHost)
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)
@@ -57,14 +57,14 @@ func TestRegister(t *testing.T) {
 
 func TestRegisterAnExistNode(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_REGISTER).
 		PushUint16(26130).
 		PushUint16(uint16(len("agent_name"))).
 		PushString("agent_name").
 		PushUint16(uint16(len(testHost))).
 		PushString(testHost)
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)
@@ -79,11 +79,11 @@ func TestRegisterAnExistNode(t *testing.T) {
 
 func TestQuery(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_QUERY).
 		PushUint16(uint16(len("agent_name"))).
 		PushString("agent_name")
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)
@@ -98,11 +98,11 @@ func TestQuery(t *testing.T) {
 
 func TestQueryNotExist(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_QUERY).
 		PushUint16(uint16(len("fake_name"))).
 		PushString("fake_name")
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)
@@ -117,11 +117,11 @@ func TestQueryNotExist(t *testing.T) {
 
 func TestUnregister(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_UNREGISTER).
 		PushUint16(uint16(len("agent_name"))).
 		PushString("agent_name")
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)
@@ -136,11 +136,11 @@ func TestUnregister(t *testing.T) {
 
 func TestUnregister2(t *testing.T) {
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(REQ_UNREGISTER).
 		PushUint16(uint16(len("agent_name"))).
 		PushString("agent_name")
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", testHost, testPort))
 	assert.Equal(t, err, nil, "ResolveTCPAddr Error.")
 	conn, err := net.DialTCP("tcp", nil, address)

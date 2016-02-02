@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"godist/base"
-	"godist/binary/packer"
 	"log"
 	"net"
+
+	"github.com/zhuangsirui/binpacker"
 )
 
 const (
@@ -97,7 +98,7 @@ func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
  * +--------+
  */
 func (m *Manager) handleRegister(request []byte) ([]byte, error) {
-	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
 	var port uint16
 	var name, host string
 	unpacker.ReadUint16(&port).
@@ -143,7 +144,7 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
  * +-------------------------------------------+
  */
 func (m *Manager) handleQuery(request []byte) ([]byte, error) {
-	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
 	var name string
 	unpacker.StringWithUint16Perfix(&name)
 	node, exist := m.find(name)
@@ -152,7 +153,7 @@ func (m *Manager) handleQuery(request []byte) ([]byte, error) {
 		return answer, errors.New("node not exists")
 	}
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(ACK_RES_OK).
 		PushUint16(node.Port).
 		PushUint16(uint16(len(node.Name))).

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"godist/base"
-	"godist/binary/packer"
 	"godist/gpmd"
 	"log"
 	"net"
 	"strings"
 	"sync/atomic"
+
+	"github.com/zhuangsirui/binpacker"
 )
 
 const EPMD_PORT = 2613
@@ -97,16 +98,16 @@ func (agent *Agent) Unregister() {
 		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
 	}
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(gpmd.REQ_UNREGISTER).
 		PushUint16(uint16(len(agent.name))).
 		PushString(agent.name)
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
 		panic(fmt.Sprintf("godist: Send unregister message error: %s", wErr))
 	}
 	var apiCode, resCode byte
-	unpacker := packer.NewUnpacker(conn)
+	unpacker := binpacker.NewUnpacker(conn)
 	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
 		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
@@ -124,18 +125,18 @@ func (agent *Agent) Register() {
 		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
 	}
 	requestBuf := new(bytes.Buffer)
-	packer.NewPacker(requestBuf).
+	binpacker.NewPacker(requestBuf).
 		PushByte(gpmd.REQ_REGISTER).
 		PushUint16(agent.port).
 		PushUint16(uint16(len(agent.name))).
 		PushString(agent.name).
 		PushUint16(uint16(len(agent.host))).
 		PushString(agent.host)
-	request := packer.AddUint16Perfix(requestBuf.Bytes())
+	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
 		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))
 	}
-	unpacker := packer.NewUnpacker(conn)
+	unpacker := binpacker.NewUnpacker(conn)
 	var apiCode, resCode byte
 	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_REGISTER || resCode != gpmd.ACK_RES_OK {
@@ -154,22 +155,22 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 	}
 	if conn, exist := agent.connections[name]; exist {
 		requestBuf := new(bytes.Buffer)
-		packer.NewPacker(requestBuf).
+		binpacker.NewPacker(requestBuf).
 			PushByte(REQ_QUERY_ALL).
 			PushUint16(uint16(len(agent.name))).
 			PushString(agent.name)
-		request := packer.AddUint64Perfix(requestBuf.Bytes())
+		request := binpacker.AddUint64Perfix(requestBuf.Bytes())
 		if _, err := conn.Write(request); err != nil {
 			return
 		}
 		// ANSWER
-		unpacker := packer.NewUnpacker(conn)
+		unpacker := binpacker.NewUnpacker(conn)
 		var ackCode byte
 		unpacker.ReadByte(&ackCode)
 		if unpacker.Error() != nil || ackCode != ACK_QUERY_ALL_OK {
 			return
 		}
-		count, err := unpacker.PopUint16()
+		count, err := unpacker.ShiftUint16()
 		if err != nil {
 			return
 		}
@@ -217,15 +218,15 @@ func (agent *Agent) QueryNode(nodeName string) {
 			return
 		}
 		requestBuf := new(bytes.Buffer)
-		packer.NewPacker(requestBuf).
+		binpacker.NewPacker(requestBuf).
 			PushByte(gpmd.REQ_QUERY).
 			PushUint16(uint16(len(name))).
 			PushString(name)
-		request := packer.AddUint16Perfix(requestBuf.Bytes())
+		request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			return
 		}
-		unpacker := packer.NewUnpacker(conn)
+		unpacker := binpacker.NewUnpacker(conn)
 		var ackCode, resCode byte
 		if unpacker.ReadByte(&ackCode).ReadByte(&resCode).Error() != nil {
 			return
@@ -278,7 +279,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 			return
 		}
 		requestBuf := new(bytes.Buffer)
-		pk := packer.NewPacker(requestBuf).PushByte(REQ_CONN)
+		pk := binpacker.NewPacker(requestBuf).PushByte(REQ_CONN)
 		if isReturn {
 			pk.PushByte(ACK_CONN_IS_RETURN)
 		} else {
@@ -289,14 +290,14 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 			PushString(agent.name).
 			PushUint16(uint16(len(agent.host))).
 			PushString(agent.host)
-		request := packer.AddUint64Perfix(requestBuf.Bytes())
+		request := binpacker.AddUint64Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			// handle error
 			conn.Close()
 			return
 		}
-		unpacker := packer.NewUnpacker(conn)
-		ackCode, err := unpacker.PopByte()
+		unpacker := binpacker.NewUnpacker(conn)
+		ackCode, err := unpacker.ShiftByte()
 		if err != nil || ackCode != ACK_CONN_OK {
 			conn.Close()
 			return
@@ -311,17 +312,17 @@ func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []
 	log.Printf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if conn, exist := agent.connections[nodeName]; exist {
 		requestBuf := new(bytes.Buffer)
-		packer.NewPacker(requestBuf).
+		binpacker.NewPacker(requestBuf).
 			PushByte(REQ_CAST).
 			PushUint64(uint64(routineId)).
 			PushUint64(uint64(len(message))).
 			PushBytes(message)
-		request := packer.AddUint64Perfix(requestBuf.Bytes())
+		request := binpacker.AddUint64Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			return
 		}
-		unpacker := packer.NewUnpacker(conn)
-		ackCode, err := unpacker.PopByte()
+		unpacker := binpacker.NewUnpacker(conn)
+		ackCode, err := unpacker.ShiftByte()
 		if err != nil || ackCode != ACK_CAST_OK {
 			return
 		}

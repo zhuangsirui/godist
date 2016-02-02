@@ -1,4 +1,4 @@
-LIBS = ./ ./binary/packer ./base ./gpmd
+LIBS = ./ ./base ./gpmd
 
 all: compile
 
