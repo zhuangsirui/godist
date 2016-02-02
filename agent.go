@@ -165,18 +165,13 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		// ANSWER
 		unpacker := packer.NewUnpacker(conn)
 		var ackCode byte
-		var length uint16
-		unpacker.ReadByte(&ackCode).ReadUint16(&length)
+		unpacker.ReadByte(&ackCode)
 		if unpacker.Error() != nil || ackCode != ACK_QUERY_ALL_OK {
+			log.Println(unpacker.Error(), ackCode)
 			return
 		}
-		var answer []byte
-		unpacker.ReadBytes(uint64(length), &answer)
-		if unpacker.Error() != nil {
-			return
-		}
-		unpacker = packer.NewUnpacker(bytes.NewBuffer(answer))
 		count, err := unpacker.PopUint16()
+		log.Println("count: ", count)
 		if err != nil {
 			return
 		}
@@ -187,7 +182,7 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 				StringWithUint16Perfix(&name).
 				StringWithUint16Perfix(&host)
 			if unpacker.Error() != nil {
-				continue
+				return
 			}
 			node := &base.Node{
 				Port: port,

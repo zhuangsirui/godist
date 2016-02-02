@@ -1,9 +1,11 @@
 package gpmd
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"godist/base"
+	"godist/binary/packer"
 	"log"
 	"net"
 )
@@ -95,16 +97,12 @@ func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
  * +--------+
  */
 func (m *Manager) handleRegister(request []byte) ([]byte, error) {
-	// 1. port
-	port := binary.LittleEndian.Uint16(request[:2])
-	// 2. name length
-	nameLen := binary.LittleEndian.Uint16(request[2:4])
-	// 3. name
-	name := string(request[4 : 4+nameLen])
-	// 4. host length
-	hostLen := binary.LittleEndian.Uint16(request[4+nameLen : 4+nameLen+2])
-	// 5. host
-	host := string(request[4+nameLen+2 : 4+nameLen+2+hostLen])
+	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
+	var port uint16
+	var name, host string
+	unpacker.ReadUint16(&port).
+		StringWithUint16Perfix(&name).
+		StringWithUint16Perfix(&host)
 	ok := m.register(&base.Node{
 		Port: port,
 		Host: host,
@@ -145,27 +143,21 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
  * +-------------------------------------------+
  */
 func (m *Manager) handleQuery(request []byte) ([]byte, error) {
-	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[2 : 2+nameLen])
+	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
+	var name string
+	unpacker.StringWithUint16Perfix(&name)
 	node, exist := m.find(name)
 	if !exist {
 		answer := []byte{ACK_RES_NODE_NOT_EXIST}
 		return answer, errors.New("node not exists")
 	}
-	// 1. Push answer head
-	answer := []byte{ACK_RES_OK}
-	// 2. Push port number
-	portBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(portBuffer, node.Port)
-	answer = append(answer, portBuffer...)
-	// 3. Push node name length
-	nameLengthBuffer := make([]byte, 2)
-	nameLength := len([]byte(node.Name))
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(nameLength))
-	answer = append(answer, nameLengthBuffer...)
-	// 4. Push node name
-	answer = append(answer, []byte(node.Name)...)
-	return answer, nil
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(ACK_RES_OK).
+		PushUint16(node.Port).
+		PushUint16(uint16(len(node.Name))).
+		PushString(node.Name)
+	return requestBuf.Bytes(), nil
 }
 
 /**

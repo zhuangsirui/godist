@@ -1,10 +1,12 @@
 package godist
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"godist/base"
+	"godist/binary/packer"
 	"net"
 	"strings"
 )
@@ -136,19 +138,14 @@ func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
-	// 0. is return
+	unpacker := packer.NewUnpacker(bytes.NewBuffer(request))
 	var isReturn byte
-	isReturn, request = request[0], request[1:]
-	// 1. port
-	port := binary.LittleEndian.Uint16(request[:2])
-	// 2. name length
-	nLength := binary.LittleEndian.Uint16(request[2:4])
-	// 3. name
-	name := string(request[4 : 4+nLength])
-	// 4. host length
-	hLength := binary.LittleEndian.Uint16(request[4+nLength : 4+nLength+2])
-	// 5. host name
-	host := string(request[4+nLength+2 : 4+nLength+2+hLength])
+	var port uint16
+	var name, host string
+	unpacker.ReadByte(&isReturn).
+		ReadUint16(&port).
+		StringWithUint16Perfix(&name).
+		StringWithUint16Perfix(&host)
 	node := &base.Node{
 		Name: name,
 		Host: host,
@@ -169,47 +166,31 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 // +-------------------------------------+
 //
 // Answer message described
-// +-------------------------------------------------------------------------------------------------------------------+
-// |        |        |            | first node message                                           | second node message |
-// |--------|--------|-------------------------------------------------------------------------------------------------|
-// | result | length | node count | port | name length | name        | host length | host        | ...                 |
-// |--------|--------|-------------------------------------------------------------------------------------------------|
-// | 1      | 2      | 2          | 2    | 2           | name length | 2           | host length | ...                 |
-// +-------------------------------------------------------------------------------------------------------------------+
+// +----------------------------------------------------------------------------------------------------------+
+// |        |            | first node message                                           | second node message |
+// |--------|-------------------------------------------------------------------------------------------------|
+// | result | node count | port | name length | name        | host length | host        | ...                 |
+// |--------|-------------------------------------------------------------------------------------------------|
+// | 1      | 2          | 2    | 2           | name length | 2           | host length | ...                 |
+// +----------------------------------------------------------------------------------------------------------+
 func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 	nameLength := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2 : 2+nameLength])
 	if agent.nodeExist(name) {
 		var nodeCount uint16 = 0
-		//answer := []byte{ACK_QUERY_ALL_OK}
-		answer := []byte{}
+		requestBuf := new(bytes.Buffer)
+		pk := packer.NewPacker(requestBuf).
+			PushByte(ACK_QUERY_ALL_OK).
+			PushUint16(uint16(len(agent.nodes)))
 		for _, node := range agent.nodes {
-			// 1. port
-			portBuf := make([]byte, 2)
-			binary.LittleEndian.PutUint16(portBuf, node.Port)
-			answer = append(answer, portBuf...)
-			// 2. name length
-			nameLenBuf := make([]byte, 2)
-			binary.LittleEndian.PutUint16(nameLenBuf, uint16(len(node.Name)))
-			answer = append(answer, nameLenBuf...)
-			// 3. name
-			answer = append(answer, []byte(node.Name)...)
-			// 4. host length
-			hostLenBuf := make([]byte, 2)
-			binary.LittleEndian.PutUint16(hostLenBuf, uint16(len(node.Host)))
-			answer = append(answer, hostLenBuf...)
-			// 5. host
-			answer = append(answer, []byte(node.Host)...)
+			pk.PushUint16(node.Port)
+			pk.PushUint16(uint16(len(node.Name)))
+			pk.PushString(node.Name)
+			pk.PushUint16(uint16(len(node.Host)))
+			pk.PushString(node.Host)
 			nodeCount += 1
 		}
-		countBuf := make([]byte, 2)
-		binary.LittleEndian.PutUint16(countBuf, nodeCount)
-		answer = append(countBuf, answer...)
-		lengthBuf := make([]byte, 2)
-		binary.LittleEndian.PutUint16(lengthBuf, uint16(len(answer)))
-		answer = append(lengthBuf, answer...)
-		answer = append([]byte{ACK_QUERY_ALL_OK}, answer...)
-		return answer, nil
+		return requestBuf.Bytes(), nil
 	}
 	return []byte{ACK_QUERY_ALL_ERR}, nil
 }
@@ -228,10 +209,12 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleCast(request []byte) ([]byte, error) {
-	routineId := base.RoutineId(binary.LittleEndian.Uint64(request[:8]))
-	length := binary.LittleEndian.Uint64(request[8:16])
-	message := request[16 : 16+length]
-	if routine, exist := agent.find(routineId); exist {
+	var routineId uint64
+	var message []byte
+	packer.NewUnpacker(bytes.NewBuffer(request)).
+		ReadUint64(&routineId).
+		BytesWithUint64Perfix(&message)
+	if routine, exist := agent.find(base.RoutineId(routineId)); exist {
 		routine.Cast(message)
 		return []byte{ACK_CAST_OK}, nil
 	} else {
