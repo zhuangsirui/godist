@@ -1,9 +1,10 @@
 package godist
 
 import (
-	"encoding/binary"
+	"bytes"
 	"fmt"
 	"godist/base"
+	"godist/binary/packer"
 	"godist/gpmd"
 	"log"
 	"net"
@@ -95,25 +96,19 @@ func (agent *Agent) Unregister() {
 	if dErr != nil {
 		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
 	}
-	request := []byte{gpmd.REQ_UNREGISTER}
-	// 1. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
-	request = append(request, nameLengthBuffer...)
-	// 2. name
-	request = append(request, []byte(agent.name)...)
-	// 3. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(gpmd.REQ_UNREGISTER).
+		PushUint16(uint16(len(agent.name))).
+		PushString(agent.name)
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
-		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))
+		panic(fmt.Sprintf("godist: Send unregister message error: %s", wErr))
 	}
-	ackBuffer := make([]byte, 2)
-	if _, rErr := conn.Read(ackBuffer); rErr != nil {
-		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
-	}
-	if ackBuffer[0] != gpmd.REQ_UNREGISTER || ackBuffer[1] != gpmd.ACK_RES_OK {
+	var apiCode, resCode byte
+	unpacker := packer.NewUnpacker(conn)
+	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
+	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
 		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
 	}
 }
@@ -128,36 +123,27 @@ func (agent *Agent) Register() {
 	if dErr != nil {
 		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
 	}
-	request := []byte{gpmd.REQ_REGISTER}
-	// 1. port
-	portBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(portBuffer, agent.port)
-	request = append(request, portBuffer...)
-	// 2. name length
-	nameLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
-	request = append(request, nameLengthBuffer...)
-	// 3. name
-	request = append(request, []byte(agent.name)...)
-	// 4. host length
-	hostLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(hostLengthBuffer, uint16(len(agent.host)))
-	request = append(request, hostLengthBuffer...)
-	// 5. host
-	request = append(request, []byte(agent.host)...)
-	// 6. add length prefix
-	requestLengthBuffer := make([]byte, 2)
-	binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-	request = append(requestLengthBuffer, request...)
+	requestBuf := new(bytes.Buffer)
+	packer.NewPacker(requestBuf).
+		PushByte(gpmd.REQ_REGISTER).
+		PushUint16(agent.port).
+		PushUint16(uint16(len(agent.name))).
+		PushString(agent.name).
+		PushUint16(uint16(len(agent.host))).
+		PushString(agent.host)
+	request := packer.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
 		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))
 	}
-	ackBuffer := make([]byte, 2)
-	if _, rErr := conn.Read(ackBuffer); rErr != nil {
-		panic(fmt.Sprintf("godist: Receive register message error: %s", rErr))
-	}
-	if ackBuffer[0] != gpmd.REQ_REGISTER || ackBuffer[1] != gpmd.ACK_RES_OK {
-		panic(fmt.Sprintf("godist: Register failed. %v", ackBuffer))
+	unpacker := packer.NewUnpacker(conn)
+	var apiCode, resCode byte
+	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
+	if unpacker.Error() != nil || apiCode != gpmd.REQ_REGISTER || resCode != gpmd.ACK_RES_OK {
+		panic(fmt.Sprintf(
+			"godist: Register failed. API: %d, Res: %d",
+			apiCode,
+			resCode,
+		))
 	}
 }
 
@@ -167,53 +153,42 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		return
 	}
 	if conn, exist := agent.connections[name]; exist {
-		// REQUEST
-		request := []byte{REQ_QUERY_ALL}
-		// 1. name length
-		nameLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
-		request = append(request, nameLengthBuffer...)
-		// 2. name
-		request = append(request, []byte(agent.name)...)
-		// 3. add length prefix
-		requestLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-		request = append(requestLengthBuffer, request...)
-		if _, wErr := conn.Write(request); wErr != nil {
+		requestBuf := new(bytes.Buffer)
+		packer.NewPacker(requestBuf).
+			PushByte(REQ_QUERY_ALL).
+			PushUint16(uint16(len(agent.name))).
+			PushString(agent.name)
+		request := packer.AddUint64Perfix(requestBuf.Bytes())
+		if _, err := conn.Write(request); err != nil {
 			return
 		}
 		// ANSWER
-		ackCodeBuf := make([]byte, 1)
-		if _, rErr := conn.Read(ackCodeBuf); rErr != nil {
+		unpacker := packer.NewUnpacker(conn)
+		var ackCode byte
+		var length uint16
+		unpacker.ReadByte(&ackCode).ReadUint16(&length)
+		if unpacker.Error() != nil || ackCode != ACK_QUERY_ALL_OK {
 			return
 		}
-		if ackCodeBuf[0] != ACK_QUERY_ALL_OK {
+		var answer []byte
+		unpacker.ReadBytes(uint64(length), &answer)
+		if unpacker.Error() != nil {
 			return
 		}
-		lengthBuf := make([]byte, 2)
-		if _, rLErr := conn.Read(lengthBuf); rLErr != nil {
+		unpacker = packer.NewUnpacker(bytes.NewBuffer(answer))
+		count, err := unpacker.PopUint16()
+		if err != nil {
 			return
 		}
-		length := binary.LittleEndian.Uint16(lengthBuf)
-		answer := make([]byte, length)
-		if _, rAErr := conn.Read(answer); rAErr != nil {
-			return
-		}
-		countBuf := make([]byte, 2)
-		countBuf, answer = answer[:2], answer[2:]
-		count := int(binary.LittleEndian.Uint16(countBuf))
-		for i := 0; i < count; i++ {
-			var portBuf, nameLenBuf, nameBuf, hostLenBuf, hostBuf []byte
-			portBuf, answer = answer[:2], answer[2:]
-			port := binary.LittleEndian.Uint16(portBuf)
-			nameLenBuf, answer = answer[:2], answer[2:]
-			nameLen := binary.LittleEndian.Uint16(nameLenBuf)
-			nameBuf, answer = answer[:nameLen], answer[nameLen:]
-			name := string(nameBuf)
-			hostLenBuf, answer = answer[:2], answer[2:]
-			hostLen := binary.LittleEndian.Uint16(hostLenBuf)
-			hostBuf, answer = answer[:hostLen], answer[hostLen:]
-			host := string(hostBuf)
+		for i := 0; i < int(count); i++ {
+			var port uint16
+			var name, host string
+			unpacker.ReadUint16(&port).
+				StringWithUint16Perfix(&name).
+				StringWithUint16Perfix(&host)
+			if unpacker.Error() != nil {
+				continue
+			}
 			node := &base.Node{
 				Port: port,
 				Host: host,
@@ -248,42 +223,31 @@ func (agent *Agent) QueryNode(nodeName string) {
 		if dErr != nil {
 			return
 		}
-		request := []byte{gpmd.REQ_QUERY}
-		// 1. name length
-		nameLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(name)))
-		request = append(request, nameLengthBuffer...)
-		// 2. name
-		request = append(request, []byte(name)...)
-		// 3. add length prefix
-		requestLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(requestLengthBuffer, uint16(len(request)))
-		request = append(requestLengthBuffer, request...)
+		requestBuf := new(bytes.Buffer)
+		packer.NewPacker(requestBuf).
+			PushByte(gpmd.REQ_QUERY).
+			PushUint16(uint16(len(name))).
+			PushString(name)
+		request := packer.AddUint16Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			return
 		}
-		resultCodeBuffer := make([]byte, 2)
-		if _, rCErr1 := conn.Read(resultCodeBuffer); rCErr1 != nil {
+		unpacker := packer.NewUnpacker(conn)
+		var ackCode, resCode byte
+		if unpacker.ReadByte(&ackCode).ReadByte(&resCode).Error() != nil {
 			return
 		}
-		if resultCodeBuffer[1] != gpmd.ACK_RES_OK {
+		if ackCode != gpmd.REQ_QUERY || resCode != gpmd.ACK_RES_OK {
 			return
 		}
-		portBuffer := make([]byte, 2)
-		if _, rPErr := conn.Read(portBuffer); rPErr != nil {
+		var port uint16
+		var ackName string
+		if unpacker.
+			ReadUint16(&port).
+			StringWithUint16Perfix(&ackName).
+			Error() != nil {
 			return
 		}
-		port := binary.LittleEndian.Uint16(portBuffer)
-		ackNameLengthBuffer := make([]byte, 2)
-		if _, rNLErr := conn.Read(ackNameLengthBuffer); rNLErr != nil {
-			return
-		}
-		nameLength := binary.LittleEndian.Uint16(ackNameLengthBuffer)
-		nameBuffer := make([]byte, nameLength)
-		if _, rNErr := conn.Read(nameBuffer); rNErr != nil {
-			return
-		}
-		ackName := string(nameBuffer)
 		if ackName != name {
 			return
 		}
@@ -320,44 +284,27 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 			// handle error
 			return
 		}
-		request := []byte{REQ_CONN}
-		// 0. is return
+		requestBuf := new(bytes.Buffer)
+		pk := packer.NewPacker(requestBuf).PushByte(REQ_CONN)
 		if isReturn {
-			request = append(request, ACK_CONN_IS_RETURN)
+			pk.PushByte(ACK_CONN_IS_RETURN)
 		} else {
-			request = append(request, ACK_CONN_IS_NOT_RETURN)
+			pk.PushByte(ACK_CONN_IS_NOT_RETURN)
 		}
-		// 1. port
-		portBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(portBuffer, agent.port)
-		request = append(request, portBuffer...)
-		// 2. name length
-		nameLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(nameLengthBuffer, uint16(len(agent.name)))
-		request = append(request, nameLengthBuffer...)
-		// 3. name
-		request = append(request, []byte(agent.name)...)
-		// 4. host length
-		hostLengthBuffer := make([]byte, 2)
-		binary.LittleEndian.PutUint16(hostLengthBuffer, uint16(len(agent.host)))
-		request = append(request, hostLengthBuffer...)
-		// 5. host
-		request = append(request, []byte(agent.host)...)
-		// 6. add length prefix
-		requestLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(requestLengthBuffer, uint64(len(request)))
-		request = append(requestLengthBuffer, request...)
+		pk.PushUint16(agent.port).
+			PushUint16(uint16(len(agent.name))).
+			PushString(agent.name).
+			PushUint16(uint16(len(agent.host))).
+			PushString(agent.host)
+		request := packer.AddUint64Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			// handle error
 			conn.Close()
 			return
 		}
-		ackBuffer := make([]byte, 1)
-		if _, rErr := conn.Read(ackBuffer); rErr != nil {
-			conn.Close()
-			return
-		}
-		if ackBuffer[0] != ACK_CONN_OK {
+		unpacker := packer.NewUnpacker(conn)
+		ackCode, err := unpacker.PopByte()
+		if err != nil || ackCode != ACK_CONN_OK {
 			conn.Close()
 			return
 		}
@@ -370,29 +317,19 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	log.Printf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if conn, exist := agent.connections[nodeName]; exist {
-		request := []byte{REQ_CAST}
-		// 1. routine id
-		routineIdBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(routineIdBuffer, uint64(routineId))
-		request = append(request, routineIdBuffer...)
-		// 2. message length
-		messageLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(messageLengthBuffer, uint64(len(message)))
-		request = append(request, messageLengthBuffer...)
-		// 3. message
-		request = append(request, message...)
-		// 4. add length prefix
-		requestLengthBuffer := make([]byte, 8)
-		binary.LittleEndian.PutUint64(requestLengthBuffer, uint64(len(request)))
-		request = append(requestLengthBuffer, request...)
+		requestBuf := new(bytes.Buffer)
+		packer.NewPacker(requestBuf).
+			PushByte(REQ_CAST).
+			PushUint64(uint64(routineId)).
+			PushUint64(uint64(len(message))).
+			PushBytes(message)
+		request := packer.AddUint64Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			return
 		}
-		ackBuffer := make([]byte, 1)
-		if _, rErr := conn.Read(ackBuffer); rErr != nil {
-			return
-		}
-		if ackBuffer[0] != ACK_CAST_OK {
+		unpacker := packer.NewUnpacker(conn)
+		ackCode, err := unpacker.PopByte()
+		if err != nil || ackCode != ACK_CAST_OK {
 			return
 		}
 	}
