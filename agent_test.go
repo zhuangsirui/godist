@@ -93,8 +93,6 @@ func TestQueryAll(t *testing.T) {
 	go tAgent3.Serve()
 	tAgent3.QueryNode(nodeName2)
 	tAgent3.ConnectTo(nodeName2)
-	tAgent2.QueryNode(nodeName3)
-	tAgent2.ConnectTo(nodeName3)
 	tAgent3.QueryAllNode(nodeName2)
 	name, _ := parseNameAndHost(nodeName1)
 	if !tAgent3.nodeExist(name) {

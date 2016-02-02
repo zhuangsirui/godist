@@ -167,11 +167,9 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		var ackCode byte
 		unpacker.ReadByte(&ackCode)
 		if unpacker.Error() != nil || ackCode != ACK_QUERY_ALL_OK {
-			log.Println(unpacker.Error(), ackCode)
 			return
 		}
 		count, err := unpacker.PopUint16()
-		log.Println("count: ", count)
 		if err != nil {
 			return
 		}
