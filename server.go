@@ -143,8 +143,8 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 	var isReturn byte
 	var port uint16
 	var name, host string
-	unpacker.ReadByte(&isReturn).
-		ReadUint16(&port).
+	unpacker.FetchByte(&isReturn).
+		FetchUint16(&port).
 		StringWithUint16Perfix(&name).
 		StringWithUint16Perfix(&host)
 	node := &base.Node{
@@ -213,7 +213,7 @@ func (agent *Agent) handleCast(request []byte) ([]byte, error) {
 	var routineId uint64
 	var message []byte
 	binpacker.NewUnpacker(bytes.NewBuffer(request)).
-		ReadUint64(&routineId).
+		FetchUint64(&routineId).
 		BytesWithUint64Perfix(&message)
 	if routine, exist := agent.find(base.RoutineId(routineId)); exist {
 		routine.Cast(message)

@@ -108,7 +108,7 @@ func (agent *Agent) Unregister() {
 	}
 	var apiCode, resCode byte
 	unpacker := binpacker.NewUnpacker(conn)
-	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
+	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
 		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
 	}
@@ -138,7 +138,7 @@ func (agent *Agent) Register() {
 	}
 	unpacker := binpacker.NewUnpacker(conn)
 	var apiCode, resCode byte
-	unpacker.ReadByte(&apiCode).ReadByte(&resCode)
+	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_REGISTER || resCode != gpmd.ACK_RES_OK {
 		panic(fmt.Sprintf(
 			"godist: Register failed. API: %d, Res: %d",
@@ -166,7 +166,7 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		// ANSWER
 		unpacker := binpacker.NewUnpacker(conn)
 		var ackCode byte
-		unpacker.ReadByte(&ackCode)
+		unpacker.FetchByte(&ackCode)
 		if unpacker.Error() != nil || ackCode != ACK_QUERY_ALL_OK {
 			return
 		}
@@ -177,7 +177,7 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 		for i := 0; i < int(count); i++ {
 			var port uint16
 			var name, host string
-			unpacker.ReadUint16(&port).
+			unpacker.FetchUint16(&port).
 				StringWithUint16Perfix(&name).
 				StringWithUint16Perfix(&host)
 			if unpacker.Error() != nil {
@@ -228,7 +228,7 @@ func (agent *Agent) QueryNode(nodeName string) {
 		}
 		unpacker := binpacker.NewUnpacker(conn)
 		var ackCode, resCode byte
-		if unpacker.ReadByte(&ackCode).ReadByte(&resCode).Error() != nil {
+		if unpacker.FetchByte(&ackCode).FetchByte(&resCode).Error() != nil {
 			return
 		}
 		if ackCode != gpmd.REQ_QUERY || resCode != gpmd.ACK_RES_OK {
@@ -237,7 +237,7 @@ func (agent *Agent) QueryNode(nodeName string) {
 		var port uint16
 		var ackName string
 		if unpacker.
-			ReadUint16(&port).
+			FetchUint16(&port).
 			StringWithUint16Perfix(&ackName).
 			Error() != nil {
 			return

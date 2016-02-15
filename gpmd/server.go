@@ -101,7 +101,7 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
 	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
 	var port uint16
 	var name, host string
-	unpacker.ReadUint16(&port).
+	unpacker.FetchUint16(&port).
 		StringWithUint16Perfix(&name).
 		StringWithUint16Perfix(&host)
 	ok := m.register(&base.Node{
