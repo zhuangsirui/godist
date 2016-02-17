@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"godist/base"
 	"godist/gpmd"
-	"log"
 	"net"
+	"orbit/log"
 	"strings"
 	"sync/atomic"
 
@@ -110,7 +110,7 @@ func (agent *Agent) Unregister() {
 	unpacker := binpacker.NewUnpacker(conn)
 	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
-		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
+		log.Errorf("godist: unregister node %s@%s error", agent.name, agent.host)
 	}
 }
 
@@ -309,7 +309,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 // 向目标 Goroutine 发送消息。该目标节点连接必须事先注册在 `agent.connections`
 // 中。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
-	log.Printf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
+	log.Debugf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if conn, exist := agent.connections[nodeName]; exist {
 		requestBuf := new(bytes.Buffer)
 		binpacker.NewPacker(requestBuf).
@@ -347,7 +347,7 @@ func (agent *Agent) connExist(name string) bool {
 func (agent *Agent) registerNode(node *base.Node) {
 	if _, exist := agent.nodes[node.Name]; !exist {
 		agent.nodes[node.Name] = node
-		log.Printf("godist: Node %s register...", node.Name)
+		log.Debugf("godist: Node %s register...", node.Name)
 	}
 }
 

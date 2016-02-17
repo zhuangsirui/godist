@@ -3,8 +3,8 @@ package gpmd
 import (
 	"fmt"
 	"godist/base"
-	"log"
 	"net"
+	"orbit/log"
 )
 
 // GPMD Manager 对象。保持本机的所有节点，以及向外部节点提供查询服务。
@@ -39,7 +39,7 @@ func (m *Manager) Serve() {
 		panic(panicInfo)
 	}
 	m.listener = listener
-	log.Printf("GPMD started on %s", m.listener.Addr())
+	log.Debugf("GPMD started on %s", m.listener.Addr())
 	go m.acceptLoop()
 }
 
@@ -56,7 +56,7 @@ func (m *Manager) register(node *base.Node) bool {
 	_, exist := m.nodes[node.Name]
 	if !exist {
 		m.nodes[node.Name] = node
-		log.Printf("Node %s register success", node.Name)
+		log.Infof("Node %s register success", node.Name)
 	}
 	return !exist
 }

@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"godist/base"
-	"log"
 	"net"
+	"orbit/log"
 
 	"github.com/zhuangsirui/binpacker"
 )
@@ -28,11 +28,11 @@ func (m *Manager) acceptLoop() {
 		conn, err := m.listener.AcceptTCP()
 		if err != nil {
 			// TODO handle accept error
-			log.Printf("Accept error %s", err)
+			log.Errorf("Accept error %s", err)
 			break
 		}
 		// 同步调用，原子性处理各个节点的请求
-		log.Printf("Handle connection...")
+		log.Debugf("Handle connection...")
 		m.handleConnection(conn)
 		conn.Close()
 	}
@@ -66,7 +66,7 @@ func (m *Manager) handleConnection(conn *net.TCPConn) error {
  * 在回应之前统一加上 `REQUEST CODE` 。
  */
 func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
-	log.Printf("Code %d request: %v", code, request)
+	log.Debugf("Code %d request: %v", code, request)
 	var answer []byte
 	var err error
 	switch code {

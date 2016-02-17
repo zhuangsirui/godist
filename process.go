@@ -2,7 +2,7 @@ package godist
 
 import (
 	"godist/base"
-	"log"
+	"orbit/log"
 	"runtime/debug"
 )
 
@@ -33,15 +33,14 @@ func (p *Process) Run(handler func([]byte) error) {
 
 func (p *Process) run(handler func([]byte) error) {
 	defer func() {
-		err := recover()
-		if err != nil {
-			log.Printf("godist: process restart for reason: %s\n%s", err, debug.Stack())
+		if err := recover(); err != nil {
+			log.Errorf("godist: process restart for reason: %s\n%s", err, debug.Stack())
 			p.run(handler)
 		}
 	}()
 	for {
 		if err := handler(<-p.Channel); err != nil {
-			log.Printf("godist.process: Process %d exit. reason: %s", p.GetId(), err)
+			log.Infof("godist.process: Process %d exit. reason: %s", p.GetId(), err)
 			break
 		}
 	}
