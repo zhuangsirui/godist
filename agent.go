@@ -149,6 +149,7 @@ func (agent *Agent) Register() {
 }
 
 func (agent *Agent) QueryAllNode(nodeName string) {
+	log.Debug("godist.agent: QueryAllNode...")
 	name, _ := parseNameAndHost(nodeName)
 	if name == agent.name {
 		return
