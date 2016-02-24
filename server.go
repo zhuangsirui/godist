@@ -68,11 +68,11 @@ func (agent *Agent) Listen() {
 // 接收请求循环。
 func (agent *Agent) Serve() {
 	for {
-		log.Debug("godist.agent: Serv loop...")
-		conn, aErr := agent.listener.AcceptTCP()
-		if aErr != nil {
+		conn, err := agent.listener.AcceptTCP()
+		if err != nil {
 			// handle accept error
-			continue
+			log.Error(err)
+			break
 		}
 		go agent.handleConnection(conn)
 	}

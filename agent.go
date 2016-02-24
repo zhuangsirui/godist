@@ -91,11 +91,13 @@ func (agent *Agent) Stop() {
 func (agent *Agent) Unregister() {
 	resolvedAddr, rErr := net.ResolveTCPAddr("tcp", agent.gpmd.Address())
 	if rErr != nil {
-		panic(fmt.Sprintf("godist: GPMD address error: %s", rErr))
+		log.Errorf("godist: GPMD address error: %s", rErr)
+		return
 	}
 	conn, dErr := net.DialTCP("tcp", nil, resolvedAddr)
 	if dErr != nil {
-		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
+		log.Errorf("godist: GPMD dial error: %s", dErr)
+		return
 	}
 	requestBuf := new(bytes.Buffer)
 	binpacker.NewPacker(requestBuf).
@@ -311,6 +313,12 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 // 中。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	log.Debugf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
+	if nodeName == agent.name {
+		if routine, exist := agent.routines[routineId]; exist {
+			routine.Cast(message)
+		}
+		return
+	}
 	if conn, exist := agent.connections[nodeName]; exist {
 		requestBuf := new(bytes.Buffer)
 		binpacker.NewPacker(requestBuf).
