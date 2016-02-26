@@ -85,7 +85,7 @@ func CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 }
 
 func CastToLocal(routineId base.RoutineId, message []byte) {
-	if routine, exist := _agent.routines[routineId]; exist {
+	if routine, exist := _agent.findRoutine(routineId); exist {
 		routine.Channel <- message
 	}
 }

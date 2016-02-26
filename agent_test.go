@@ -50,13 +50,13 @@ func TestConnect(t *testing.T) {
 	if !tAgent1.nodeExist(name2) {
 		t.Error("node not exist")
 	}
-	if _, exist := tAgent1.connections[name2]; !exist {
+	if _, exist := tAgent1.findConn(name2); !exist {
 		t.Error("connection not exist")
 	}
 	if !tAgent2.nodeExist(name1) {
 		t.Error("node not exist")
 	}
-	if _, exist := tAgent2.connections[name1]; !exist {
+	if _, exist := tAgent2.findConn(name1); !exist {
 		t.Error("connection not exist")
 	}
 }
@@ -67,7 +67,7 @@ func TestRegisterRoutine(t *testing.T) {
 		Channel: c,
 	}
 	tAgent1.RegisterRoutine(routine)
-	routine2, exist := tAgent1.routines[routine.GetId()]
+	routine2, exist := tAgent1.findRoutine(routine.GetId())
 	if !exist {
 		t.Error("register routine failed.")
 	}

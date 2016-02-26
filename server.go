@@ -184,6 +184,8 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 	nameLength := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2 : 2+nameLength])
 	if agent.nodeExist(name) {
+		agent.nodeLock.RLock()
+		defer agent.nodeLock.RUnlock()
 		var nodeCount uint16 = 0
 		requestBuf := new(bytes.Buffer)
 		pk := binpacker.NewPacker(requestBuf).
@@ -222,7 +224,7 @@ func (agent *Agent) handleCast(request []byte) ([]byte, error) {
 	binpacker.NewUnpacker(bytes.NewBuffer(request)).
 		FetchUint64(&routineId).
 		BytesWithUint64Perfix(&message)
-	if routine, exist := agent.find(base.RoutineId(routineId)); exist {
+	if routine, exist := agent.findRoutine(base.RoutineId(routineId)); exist {
 		routine.Cast(message)
 		return []byte{ACK_CAST_OK}, nil
 	} else {

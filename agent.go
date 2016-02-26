@@ -8,6 +8,7 @@ import (
 	"net"
 	"orbit/log"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/zhuangsirui/binpacker"
@@ -25,8 +26,11 @@ type Agent struct {
 	host           string
 	port           uint16
 	nodes          map[string]*base.Node
+	nodeLock       *sync.RWMutex
 	routines       map[base.RoutineId]*base.Routine
+	routineLock    *sync.RWMutex
 	connections    map[string]*net.TCPConn
+	connectionLock *sync.RWMutex
 	listener       *net.TCPListener
 	routineCounter *uint64
 }
@@ -44,8 +48,11 @@ func New(node string) *Agent {
 		name:           nameAndHost[0],
 		host:           nameAndHost[1],
 		nodes:          make(map[string]*base.Node),
+		nodeLock:       new(sync.RWMutex),
 		routines:       make(map[base.RoutineId]*base.Routine),
+		routineLock:    new(sync.RWMutex),
 		connections:    make(map[string]*net.TCPConn),
+		connectionLock: new(sync.RWMutex),
 		routineCounter: &routineCounter,
 	}
 }
@@ -156,7 +163,7 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 	if name == agent.name {
 		return
 	}
-	if conn, exist := agent.connections[name]; exist {
+	if conn, exist := agent.findConn(name); exist {
 		requestBuf := new(bytes.Buffer)
 		binpacker.NewPacker(requestBuf).
 			PushByte(REQ_QUERY_ALL).
@@ -270,7 +277,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 	if name == agent.name {
 		return
 	}
-	if node, exist := agent.nodes[name]; exist {
+	if node, exist := agent.findNode(name); exist {
 		address, rErr := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", node.Host, node.Port))
 		if rErr != nil {
 			// handle error
@@ -314,12 +321,12 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	log.Debugf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if nodeName == agent.name {
-		if routine, exist := agent.routines[routineId]; exist {
+		if routine, exist := agent.findRoutine(routineId); exist {
 			routine.Cast(message)
 		}
 		return
 	}
-	if conn, exist := agent.connections[nodeName]; exist {
+	if conn, exist := agent.findConn(nodeName); exist {
 		requestBuf := new(bytes.Buffer)
 		binpacker.NewPacker(requestBuf).
 			PushByte(REQ_CAST).
@@ -338,29 +345,24 @@ func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []
 	}
 }
 
-func (agent *Agent) find(routineId base.RoutineId) (*base.Routine, bool) {
+func (agent *Agent) registerRoutine(routine *base.Routine) {
+	agent.routineLock.Lock()
+	defer agent.routineLock.Unlock()
+	if _, exist := agent.routines[routine.GetId()]; !exist {
+		agent.routines[routine.GetId()] = routine
+	}
+}
+
+func (agent *Agent) findRoutine(routineId base.RoutineId) (*base.Routine, bool) {
+	agent.routineLock.RLock()
+	defer agent.routineLock.RUnlock()
 	routine, exist := agent.routines[routineId]
 	return routine, exist
 }
 
-func (agent *Agent) nodeExist(name string) bool {
-	_, exist := agent.nodes[name]
-	return exist
-}
-
-func (agent *Agent) connExist(name string) bool {
-	_, exist := agent.connections[name]
-	return exist
-}
-
-func (agent *Agent) registerNode(node *base.Node) {
-	if _, exist := agent.nodes[node.Name]; !exist {
-		agent.nodes[node.Name] = node
-		log.Debugf("godist: Node %s register...", node.Name)
-	}
-}
-
 func (agent *Agent) registerConn(name string, conn *net.TCPConn) {
+	agent.connectionLock.Lock()
+	defer agent.connectionLock.Unlock()
 	oldConn, exist := agent.connections[name]
 	if exist {
 		log.Printf("godist: Close the old connection of node %s", name)
@@ -370,10 +372,41 @@ func (agent *Agent) registerConn(name string, conn *net.TCPConn) {
 	log.Printf("godist: Hoding node %s connection", name)
 }
 
-func (agent *Agent) registerRoutine(routine *base.Routine) {
-	if _, exist := agent.routines[routine.GetId()]; !exist {
-		agent.routines[routine.GetId()] = routine
+func (agent *Agent) findConn(name string) (conn *net.TCPConn, exist bool) {
+	agent.connectionLock.RLock()
+	defer agent.connectionLock.RUnlock()
+	conn, exist = agent.connections[name]
+	return
+}
+
+func (agent *Agent) connExist(name string) bool {
+	agent.connectionLock.RLock()
+	defer agent.connectionLock.RUnlock()
+	_, exist := agent.connections[name]
+	return exist
+}
+
+func (agent *Agent) registerNode(node *base.Node) {
+	agent.nodeLock.Lock()
+	defer agent.nodeLock.Unlock()
+	if _, exist := agent.nodes[node.Name]; !exist {
+		agent.nodes[node.Name] = node
+		log.Debugf("godist: Node %s register...", node.Name)
 	}
+}
+
+func (agent *Agent) findNode(name string) (node *base.Node, exist bool) {
+	agent.nodeLock.RLock()
+	defer agent.nodeLock.RUnlock()
+	node, exist = agent.nodes[name]
+	return
+}
+
+func (agent *Agent) nodeExist(name string) bool {
+	agent.nodeLock.RLock()
+	defer agent.nodeLock.RUnlock()
+	_, exist := agent.nodes[name]
+	return exist
 }
 
 func (agent *Agent) incrRoutineId() base.RoutineId {

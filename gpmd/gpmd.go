@@ -5,6 +5,7 @@ import (
 	"godist/base"
 	"net"
 	"orbit/log"
+	"sync"
 )
 
 // GPMD Manager 对象。保持本机的所有节点，以及向外部节点提供查询服务。
@@ -12,15 +13,17 @@ type Manager struct {
 	port     uint16
 	host     string
 	nodes    map[string]*base.Node
+	nodeLock *sync.RWMutex
 	listener *net.TCPListener
 }
 
 // 创建一个 GPMD 实例。
 func New(host string, port uint16) *Manager {
 	return &Manager{
-		port:  port,
-		host:  host,
-		nodes: make(map[string]*base.Node),
+		port:     port,
+		host:     host,
+		nodes:    make(map[string]*base.Node),
+		nodeLock: new(sync.RWMutex),
 	}
 }
 
@@ -48,11 +51,15 @@ func (m *Manager) Stop() {
 }
 
 func (m *Manager) find(name string) (*base.Node, bool) {
+	m.nodeLock.RLock()
+	defer m.nodeLock.RUnlock()
 	node, exist := m.nodes[name]
 	return node, exist
 }
 
 func (m *Manager) register(node *base.Node) bool {
+	m.nodeLock.Lock()
+	defer m.nodeLock.Unlock()
 	_, exist := m.nodes[node.Name]
 	if !exist {
 		m.nodes[node.Name] = node
@@ -62,6 +69,8 @@ func (m *Manager) register(node *base.Node) bool {
 }
 
 func (m *Manager) unregister(name string) bool {
+	m.nodeLock.Lock()
+	defer m.nodeLock.Unlock()
 	_, exist := m.nodes[name]
 	if exist {
 		delete(m.nodes, name)
