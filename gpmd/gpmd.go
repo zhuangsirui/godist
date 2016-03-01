@@ -3,8 +3,8 @@ package gpmd
 import (
 	"fmt"
 	"godist/base"
+	"log"
 	"net"
-	"orbit/log"
 	"sync"
 )
 
@@ -15,6 +15,7 @@ type Manager struct {
 	nodes    map[string]*base.Node
 	nodeLock *sync.RWMutex
 	listener *net.TCPListener
+	isStop   bool
 }
 
 // 创建一个 GPMD 实例。
@@ -34,20 +35,15 @@ func (m *Manager) Serve() {
 		fmt.Sprintf("%s:%d", m.host, m.port),
 	)
 	if rErr != nil {
-		panic(fmt.Sprintf("GPMD listen port error: ", rErr))
+		log.Panicf("GPMD resolve tcp address error: %s", rErr)
 	}
 	listener, listenErr := net.ListenTCP("tcp", listenAddr)
 	if listenErr != nil {
-		panicInfo := fmt.Sprintf("GPMD listen port error: ", listenErr)
-		panic(panicInfo)
+		log.Panicf("GPMD listen port error: %s", listenErr)
 	}
 	m.listener = listener
-	log.Debugf("GPMD started on %s", m.listener.Addr())
+	log.Printf("GPMD started on %s", m.listener.Addr())
 	go m.acceptLoop()
-}
-
-func (m *Manager) Stop() {
-	m.listener.Close()
 }
 
 func (m *Manager) find(name string) (*base.Node, bool) {
@@ -63,7 +59,7 @@ func (m *Manager) register(node *base.Node) bool {
 	_, exist := m.nodes[node.Name]
 	if !exist {
 		m.nodes[node.Name] = node
-		log.Infof("Node %s register success", node.Name)
+		log.Printf("GPMD node %s register success", node.Name)
 	}
 	return !exist
 }

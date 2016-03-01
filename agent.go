@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"godist/base"
 	"godist/gpmd"
+	"log"
 	"net"
-	"orbit/log"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -35,7 +35,7 @@ type Agent struct {
 	routineCounter *uint64
 }
 
-// 构建 godist.Agent 对象，返回其指针。
+// New 构建 godist.Agent 对象，返回其指针。
 func New(node string) *Agent {
 	nameAndHost := make([]string, 2)
 	nameAndHost = strings.SplitN(node, "@", 2)
@@ -98,12 +98,12 @@ func (agent *Agent) Stop() {
 func (agent *Agent) Unregister() {
 	resolvedAddr, rErr := net.ResolveTCPAddr("tcp", agent.gpmd.Address())
 	if rErr != nil {
-		log.Errorf("godist: GPMD address error: %s", rErr)
+		log.Printf("godist: GPMD address error: %s", rErr)
 		return
 	}
 	conn, dErr := net.DialTCP("tcp", nil, resolvedAddr)
 	if dErr != nil {
-		log.Errorf("godist: GPMD dial error: %s", dErr)
+		log.Printf("godist: GPMD dial error: %s", dErr)
 		return
 	}
 	requestBuf := new(bytes.Buffer)
@@ -119,7 +119,7 @@ func (agent *Agent) Unregister() {
 	unpacker := binpacker.NewUnpacker(conn)
 	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
-		log.Errorf("godist: unregister node %s@%s error", agent.name, agent.host)
+		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
 	}
 }
 
@@ -158,7 +158,6 @@ func (agent *Agent) Register() {
 }
 
 func (agent *Agent) QueryAllNode(nodeName string) {
-	log.Debug("godist.agent: QueryAllNode...")
 	name, _ := parseNameAndHost(nodeName)
 	if name == agent.name {
 		return
@@ -319,7 +318,6 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 // 向目标 Goroutine 发送消息。该目标节点连接必须事先注册在 `agent.connections`
 // 中。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
-	log.Debugf("godist: Cast to %d@%s message...", uint64(routineId), nodeName)
 	if nodeName == agent.name {
 		if routine, exist := agent.findRoutine(routineId); exist {
 			routine.Cast(message)
@@ -391,7 +389,7 @@ func (agent *Agent) registerNode(node *base.Node) {
 	defer agent.nodeLock.Unlock()
 	if _, exist := agent.nodes[node.Name]; !exist {
 		agent.nodes[node.Name] = node
-		log.Debugf("godist: Node %s register...", node.Name)
+		log.Printf("godist: Node %s register...", node.Name)
 	}
 }
 

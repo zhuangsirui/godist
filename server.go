@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"godist/base"
+	"log"
 	"net"
-	"orbit/log"
 	"strings"
 
 	"github.com/zhuangsirui/binpacker"
@@ -71,7 +71,7 @@ func (agent *Agent) Serve() {
 		conn, err := agent.listener.AcceptTCP()
 		if err != nil {
 			// handle accept error
-			log.Error(err)
+			log.Print(err)
 			break
 		}
 		go agent.handleConnection(conn)
@@ -86,7 +86,6 @@ func (agent *Agent) Serve() {
 // +------------------+
 func (agent *Agent) handleConnection(conn *net.TCPConn) {
 	for {
-		log.Debug("godist.agent: Handle connection...")
 		lengthBuffer := make([]byte, 8)
 		if _, err := conn.Read(lengthBuffer); err != nil {
 			// handle error
@@ -143,7 +142,6 @@ func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
-	log.Debug("godist.agent: Handle connect...")
 	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
 	var isReturn byte
 	var port uint16
@@ -180,7 +178,6 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 // | 1      | 2          | 2    | 2           | name length | 2           | host length | ...                 |
 // +----------------------------------------------------------------------------------------------------------+
 func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
-	log.Debug("godist.agent: Handle query all nodes...")
 	nameLength := binary.LittleEndian.Uint16(request[:2])
 	name := string(request[2 : 2+nameLength])
 	if agent.nodeExist(name) {
@@ -218,7 +215,6 @@ func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {
 // | 1      |
 // +--------+
 func (agent *Agent) handleCast(request []byte) ([]byte, error) {
-	log.Debug("godist.agent: Handle cast...")
 	var routineId uint64
 	var message []byte
 	binpacker.NewUnpacker(bytes.NewBuffer(request)).

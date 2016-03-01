@@ -2,11 +2,10 @@ package gpmd
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"godist/base"
+	"log"
 	"net"
-	"orbit/log"
 
 	"github.com/zhuangsirui/binpacker"
 )
@@ -23,16 +22,29 @@ const (
 	ACK_RES_NODE_NOT_EXIST = 0x02
 )
 
+func (m *Manager) Stop() {
+	m.listener.Close()
+	m.isStop = true
+}
+
 func (m *Manager) acceptLoop() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("GPMD accept loop recover error: %s", r)
+		}
+		if !m.isStop {
+			log.Printf("GPMD accept loop is not stop. Reserving...")
+			m.Serve()
+		}
+	}()
 	for {
 		conn, err := m.listener.AcceptTCP()
 		if err != nil {
 			// TODO handle accept error
-			log.Errorf("Accept error %s", err)
+			log.Printf("Accept error %s", err)
 			break
 		}
 		// 同步调用，原子性处理各个节点的请求
-		log.Debugf("Handle connection...")
 		m.handleConnection(conn)
 		conn.Close()
 	}
@@ -47,15 +59,9 @@ func (m *Manager) acceptLoop() {
  * +----------------------------+
  */
 func (m *Manager) handleConnection(conn *net.TCPConn) error {
-	lengthBuffer := make([]byte, 2)
-	if _, err := conn.Read(lengthBuffer); err != nil {
-		return err
-	}
-	length := binary.LittleEndian.Uint16(lengthBuffer)
-	requestBuffer := make([]byte, length)
-	if _, err := conn.Read(requestBuffer); err != nil {
-		return err
-	}
+	unpacker := binpacker.NewUnpacker(conn)
+	var requestBuffer []byte
+	unpacker.BytesWithUint16Perfix(&requestBuffer)
 	code, request := requestBuffer[0], requestBuffer[1:]
 	answer, err := m.dispatchRequest(code, request)
 	conn.Write(answer)
@@ -66,7 +72,6 @@ func (m *Manager) handleConnection(conn *net.TCPConn) error {
  * 在回应之前统一加上 `REQUEST CODE` 。
  */
 func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
-	log.Debugf("Code %d request: %v", code, request)
 	var answer []byte
 	var err error
 	switch code {
@@ -178,8 +183,9 @@ func (m *Manager) handleQuery(request []byte) ([]byte, error) {
  * +--------+
  */
 func (m *Manager) handleUnregister(request []byte) ([]byte, error) {
-	nameLen := binary.LittleEndian.Uint16(request[:2])
-	name := string(request[2 : 2+nameLen])
+	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
+	var name string
+	unpacker.StringWithUint16Perfix(&name)
 	ok := m.unregister(name)
 	var answer []byte
 	var err error
