@@ -21,10 +21,8 @@ var routineCounter uint64
 // Agent 结构持有本节点所有注册过的 Goroutine 对象，所有在集群中的节点信息以及
 // 针对所有节点的链接。
 type Agent struct {
+	node           *base.Node
 	gpmd           base.GPMD
-	name           string
-	host           string
-	port           uint16
 	nodes          map[string]*base.Node
 	nodeLock       *sync.RWMutex
 	routines       map[base.RoutineId]*base.Routine
@@ -44,9 +42,11 @@ func New(node string) *Agent {
 		Port: EPMD_PORT,
 	}
 	return &Agent{
+		node: &base.Node{
+			Name: nameAndHost[0],
+			Host: nameAndHost[1],
+		},
 		gpmd:           gpmd,
-		name:           nameAndHost[0],
-		host:           nameAndHost[1],
 		nodes:          make(map[string]*base.Node),
 		nodeLock:       new(sync.RWMutex),
 		routines:       make(map[base.RoutineId]*base.Routine),
@@ -58,23 +58,19 @@ func New(node string) *Agent {
 }
 
 func (a *Agent) Host() string {
-	return a.host
+	return a.node.Host
 }
 
 func (a *Agent) Port() uint16 {
-	return a.port
+	return a.node.Port
 }
 
 func (a *Agent) Name() string {
-	return a.name
+	return a.node.Name
 }
 
 func (a *Agent) Node() *base.Node {
-	return &base.Node{
-		Port: a.Port(),
-		Name: a.Name(),
-		Host: a.Host(),
-	}
+	return a.node
 }
 
 // 设置本机的 GPMD 服务地址。默认为 ":2613"
@@ -109,17 +105,17 @@ func (agent *Agent) Unregister() {
 	requestBuf := new(bytes.Buffer)
 	binpacker.NewPacker(requestBuf).
 		PushByte(gpmd.REQ_UNREGISTER).
-		PushUint16(uint16(len(agent.name))).
-		PushString(agent.name)
+		PushUint16(uint16(len(agent.Name()))).
+		PushString(agent.Name())
 	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
-		panic(fmt.Sprintf("godist: Send unregister message error: %s", wErr))
+		log.Panicf("godist: Send unregister message error: %s", wErr)
 	}
 	var apiCode, resCode byte
 	unpacker := binpacker.NewUnpacker(conn)
 	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_UNREGISTER || resCode != gpmd.ACK_RES_OK {
-		log.Printf("godist: unregister node %s@%s error", agent.name, agent.host)
+		log.Printf("godist: unregister node %s@%s error", agent.Name(), agent.Host())
 	}
 }
 
@@ -127,47 +123,43 @@ func (agent *Agent) Unregister() {
 func (agent *Agent) Register() {
 	resolvedAddr, rErr := net.ResolveTCPAddr("tcp", agent.gpmd.Address())
 	if rErr != nil {
-		panic(fmt.Sprintf("godist: GPMD address error: %s", rErr))
+		log.Panicf("godist: GPMD address error: %s", rErr)
 	}
 	conn, dErr := net.DialTCP("tcp", nil, resolvedAddr)
 	if dErr != nil {
-		panic(fmt.Sprintf("godist: GPMD dial error: %s", dErr))
+		log.Panicf("godist: GPMD dial error: %s", dErr)
 	}
 	requestBuf := new(bytes.Buffer)
 	binpacker.NewPacker(requestBuf).
 		PushByte(gpmd.REQ_REGISTER).
-		PushUint16(agent.port).
-		PushUint16(uint16(len(agent.name))).
-		PushString(agent.name).
-		PushUint16(uint16(len(agent.host))).
-		PushString(agent.host)
+		PushUint16(agent.Port()).
+		PushUint16(uint16(len(agent.Name()))).
+		PushString(agent.Name()).
+		PushUint16(uint16(len(agent.Host()))).
+		PushString(agent.Host())
 	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
-		panic(fmt.Sprintf("godist: Send register message error: %s", wErr))
+		log.Panicf("godist: Send register message error: %s", wErr)
 	}
 	unpacker := binpacker.NewUnpacker(conn)
 	var apiCode, resCode byte
 	unpacker.FetchByte(&apiCode).FetchByte(&resCode)
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_REGISTER || resCode != gpmd.ACK_RES_OK {
-		panic(fmt.Sprintf(
-			"godist: Register failed. API: %d, Res: %d",
-			apiCode,
-			resCode,
-		))
+		log.Panicf("godist: Register failed. API: %d, Res: %d", apiCode, resCode)
 	}
 }
 
 func (agent *Agent) QueryAllNode(nodeName string) {
 	name, _ := parseNameAndHost(nodeName)
-	if name == agent.name {
+	if name == agent.Name() {
 		return
 	}
 	if conn, exist := agent.findConn(name); exist {
 		requestBuf := new(bytes.Buffer)
 		binpacker.NewPacker(requestBuf).
 			PushByte(REQ_QUERY_ALL).
-			PushUint16(uint16(len(agent.name))).
-			PushString(agent.name)
+			PushUint16(uint16(len(agent.Name()))).
+			PushString(agent.Name())
 		request := binpacker.AddUint64Perfix(requestBuf.Bytes())
 		if _, err := conn.Write(request); err != nil {
 			return
@@ -211,7 +203,7 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 //  `nodeName` e.g. "player_01@player.1.example.local"
 func (agent *Agent) QueryNode(nodeName string) {
 	name, host := parseNameAndHost(nodeName)
-	if name == agent.name {
+	if name == agent.Name() {
 		return
 	}
 	if !agent.nodeExist(name) {
@@ -245,10 +237,7 @@ func (agent *Agent) QueryNode(nodeName string) {
 		}
 		var port uint16
 		var ackName string
-		if unpacker.
-			FetchUint16(&port).
-			StringWithUint16Perfix(&ackName).
-			Error() != nil {
+		if unpacker.FetchUint16(&port).StringWithUint16Perfix(&ackName).Error() != nil {
 			return
 		}
 		if ackName != name {
@@ -273,7 +262,7 @@ func (agent *Agent) ConnectTo(nodeName string) {
 
 func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 	name, _ := parseNameAndHost(nodeName)
-	if name == agent.name {
+	if name == agent.Name() {
 		return
 	}
 	if node, exist := agent.findNode(name); exist {
@@ -285,6 +274,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 		conn, dErr := net.DialTCP("tcp", nil, address)
 		if dErr != nil {
 			// handle error
+			log.Printf("godist.agent connect to %s[%s] error: %s", name, address, dErr)
 			return
 		}
 		requestBuf := new(bytes.Buffer)
@@ -294,11 +284,11 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 		} else {
 			pk.PushByte(ACK_CONN_IS_NOT_RETURN)
 		}
-		pk.PushUint16(agent.port).
-			PushUint16(uint16(len(agent.name))).
-			PushString(agent.name).
-			PushUint16(uint16(len(agent.host))).
-			PushString(agent.host)
+		pk.PushUint16(agent.Port()).
+			PushUint16(uint16(len(agent.Name()))).
+			PushString(agent.Name()).
+			PushUint16(uint16(len(agent.Host()))).
+			PushString(agent.Host())
 		request := binpacker.AddUint64Perfix(requestBuf.Bytes())
 		if _, wErr := conn.Write(request); wErr != nil {
 			// handle error
@@ -306,6 +296,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 			return
 		}
 		unpacker := binpacker.NewUnpacker(conn)
+		// TODO set connect timeout
 		ackCode, err := unpacker.ShiftByte()
 		if err != nil || ackCode != ACK_CONN_OK {
 			conn.Close()
@@ -318,7 +309,7 @@ func (agent *Agent) connectTo(nodeName string, isReturn bool) {
 // 向目标 Goroutine 发送消息。该目标节点连接必须事先注册在 `agent.connections`
 // 中。
 func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {
-	if nodeName == agent.name {
+	if nodeName == agent.Name() {
 		if routine, exist := agent.findRoutine(routineId); exist {
 			routine.Cast(message)
 		}
@@ -397,6 +388,7 @@ func (agent *Agent) findNode(name string) (node *base.Node, exist bool) {
 	agent.nodeLock.RLock()
 	defer agent.nodeLock.RUnlock()
 	node, exist = agent.nodes[name]
+	fmt.Printf("node: %s in agent %s", name, agent.Name())
 	return
 }
 
@@ -413,9 +405,9 @@ func (agent *Agent) incrRoutineId() base.RoutineId {
 }
 
 func parseNameAndHost(nodeName string) (string, string) {
-	nameAndHost := make([]string, 2)
-	nameAndHost = strings.SplitN(nodeName, "@", 2)
-	name := nameAndHost[0]
-	host := nameAndHost[1]
-	return name, host
+	if !strings.Contains(nodeName, "@") {
+		return nodeName, ""
+	}
+	nameAndHost := strings.SplitN(nodeName, "@", 2)
+	return nameAndHost[0], nameAndHost[1]
 }

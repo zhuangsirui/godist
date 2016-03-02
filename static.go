@@ -19,7 +19,7 @@ func Init(name string) {
 	_agent = New(name)
 	_agent.Listen()
 	go _agent.Serve()
-	_agent.Register()
+	//_agent.Register()
 }
 
 func Stop() {
@@ -30,6 +30,10 @@ func Stop() {
 func SetGPMD(host string, port uint16) {
 	_agent.gpmd.Host = host
 	_agent.gpmd.Port = port
+}
+
+func Register() {
+	_agent.Register()
 }
 
 func Host() string {
@@ -82,10 +86,4 @@ func ConnectTo(nodeName string) {
 // 向目标 Goroutine 发送消息。
 func CastTo(nodeName string, routineId base.RoutineId, message []byte) {
 	_agent.CastTo(nodeName, routineId, message)
-}
-
-func CastToLocal(routineId base.RoutineId, message []byte) {
-	if routine, exist := _agent.findRoutine(routineId); exist {
-		routine.Channel <- message
-	}
 }

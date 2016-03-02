@@ -6,7 +6,6 @@ import (
 	"godist/base"
 	"net"
 	"testing"
-	"time"
 
 	"github.com/smartystreets/goconvey/convey"
 	"github.com/zhuangsirui/binpacker"
@@ -101,6 +100,13 @@ func TestRegistion(t *testing.T) {
 			t.Log(ack)
 			convey.So(ack, convey.ShouldResemble, []byte{REQ_UNREGISTER, ACK_RES_NODE_NOT_EXIST})
 		})
+
+		convey.Convey("Send unknown code", func() {
+			requestBuf := new(bytes.Buffer)
+			binpacker.NewPacker(requestBuf).PushByte(0xff)
+			_, err = conn.Write(binpacker.AddUint16Perfix(requestBuf.Bytes()))
+			convey.So(err, convey.ShouldBeNil)
+		})
 	})
 }
 
@@ -146,14 +152,15 @@ func TestQuery(t *testing.T) {
 func TestRestart(t *testing.T) {
 	convey.Convey("Restart", t, func() {
 		_manager.listener.Close()
-		time.Sleep(50 * time.Millisecond)
+		_manager.Restarted()
 	})
 }
 
 func TestStop(t *testing.T) {
-	convey.Convey("Restart", t, func() {
+	convey.Convey("Stop", t, func() {
 		convey.So(func() {
 			Stop()
 		}, convey.ShouldNotPanic)
+		Stopped()
 	})
 }

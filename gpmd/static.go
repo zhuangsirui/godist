@@ -25,3 +25,7 @@ func Init() {
 func Stop() {
 	_manager.Stop()
 }
+
+func Stopped() {
+	_manager.Stopped()
+}

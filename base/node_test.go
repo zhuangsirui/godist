@@ -1,12 +1,19 @@
 package base
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
+)
 
 func TestNode(t *testing.T) {
-	n := Node{
-		Port: 3312,
-		Host: "localhost",
-		Name: "master_01",
-	}
-	n.FullName()
+	convey.Convey("Init Node", t, func() {
+		n := Node{
+			Port: 3312,
+			Host: "localhost",
+			Name: "master_01",
+		}
+		n.FullName()
+		n.String()
+	})
 }

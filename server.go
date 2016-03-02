@@ -38,8 +38,8 @@ func (agent *Agent) Listen() {
 	var errMessages []string
 	agent.listener = nil
 	for _, port := range PORTS {
-		agent.port = port
-		listenStr := fmt.Sprintf("%s:%d", agent.host, agent.port)
+		agent.node.Port = port
+		listenStr := fmt.Sprintf("%s:%d", agent.Host(), agent.Port())
 		listenAddr, rErr := net.ResolveTCPAddr("tcp", listenStr)
 		if rErr != nil {
 			errMessages = append(
@@ -60,7 +60,7 @@ func (agent *Agent) Listen() {
 		break
 	}
 	if agent.listener == nil {
-		panic(strings.Join(errMessages, "\n"))
+		log.Panicf(strings.Join(errMessages, "\n"))
 	}
 	agent.registerNode(agent.Node())
 }
@@ -71,7 +71,7 @@ func (agent *Agent) Serve() {
 		conn, err := agent.listener.AcceptTCP()
 		if err != nil {
 			// handle accept error
-			log.Print(err)
+			log.Printf("godist.agent accept tcp error: %s", err)
 			break
 		}
 		go agent.handleConnection(conn)

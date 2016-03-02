@@ -1,0 +1,154 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ACK_CAST_OK	server.go	/^	ACK_CONN_NODE_EXIST        = 0x02$/;"	c
+ACK_CAST_ROUTINE_NOT_FOUND	server.go	/^	ACK_CAST_OK                = 0x03$/;"	c
+ACK_CONN_IS_NOT_RETURN	server.go	/^	ACK_CONN_IS_RETURN         = 0x07$/;"	c
+ACK_CONN_IS_RETURN	server.go	/^	ACK_QUERY_ALL_ERR          = 0x06$/;"	c
+ACK_CONN_NODE_EXIST	server.go	/^	ACK_CONN_OK                = 0x01$/;"	c
+ACK_CONN_OK	server.go	/^	REQ_QUERY_ALL = 0x03$/;"	c
+ACK_QUERY_ALL_ERR	server.go	/^	ACK_QUERY_ALL_OK           = 0x05$/;"	c
+ACK_QUERY_ALL_OK	server.go	/^	ACK_CAST_ROUTINE_NOT_FOUND = 0x04$/;"	c
+ACK_RES_NODE_EXIST	gpmd/server.go	/^	ACK_RES_OK             = 0x00$/;"	c
+ACK_RES_NODE_NOT_EXIST	gpmd/server.go	/^	ACK_RES_NODE_EXIST     = 0x01$/;"	c
+ACK_RES_OK	gpmd/server.go	/^const ($/;"	c
+Address	base/gpmd.go	/^func (g GPMD) Address() string {$/;"	f
+Agent	agent.go	/^type Agent struct {$/;"	t
+Cast	base/routine.go	/^func (r *Routine) Cast(message []byte) {$/;"	f
+CastTo	agent.go	/^func (agent *Agent) CastTo(nodeName string, routineId base.RoutineId, message []byte) {$/;"	f
+CastTo	static.go	/^func CastTo(nodeName string, routineId base.RoutineId, message []byte) {$/;"	f
+CastToLocal	static.go	/^func CastToLocal(routineId base.RoutineId, message []byte) {$/;"	f
+ConnectTo	agent.go	/^func (agent *Agent) ConnectTo(nodeName string) {$/;"	f
+ConnectTo	static.go	/^func ConnectTo(nodeName string) {$/;"	f
+EPMD_PORT	agent.go	/^const EPMD_PORT = 2613$/;"	c
+FullName	base/node.go	/^func (n *Node) FullName() string {$/;"	f
+GPMD	base/gpmd.go	/^type GPMD struct {$/;"	t
+GetId	base/routine.go	/^func (r *Routine) GetId() RoutineId {$/;"	f
+GetId	process.go	/^func (p *Process) GetId() base.RoutineId {$/;"	f
+Host	agent.go	/^func (a *Agent) Host() string {$/;"	f
+Host	static.go	/^func Host() string {$/;"	f
+Init	gpmd/static.go	/^func Init() {$/;"	f
+Init	static.go	/^func Init(name string) {$/;"	f
+LIBS	Makefile	/^LIBS = .\/ .\/base .\/gpmd$/;"	m
+Listen	server.go	/^func (agent *Agent) Listen() {$/;"	f
+Manager	gpmd/gpmd.go	/^type Manager struct {$/;"	t
+Name	agent.go	/^func (a *Agent) Name() string {$/;"	f
+Name	static.go	/^func Name() string {$/;"	f
+New	agent.go	/^func New(node string) *Agent {$/;"	f
+New	gpmd/gpmd.go	/^func New(host string, port uint16) *Manager {$/;"	f
+NewProcess	process.go	/^func (agent *Agent) NewProcess() *Process {$/;"	f
+NewProcess	static.go	/^func NewProcess() *Process {$/;"	f
+Node	agent.go	/^func (a *Agent) Node() *base.Node {$/;"	f
+Node	base/node.go	/^type Node struct {$/;"	t
+Node	static.go	/^func Node() *base.Node {$/;"	f
+PORTS	server.go	/^var PORTS = []uint16{$/;"	v
+Port	agent.go	/^func (a *Agent) Port() uint16 {$/;"	f
+Port	static.go	/^func Port() uint16 {$/;"	f
+Process	process.go	/^type Process struct {$/;"	t
+QueryAllNode	agent.go	/^func (agent *Agent) QueryAllNode(nodeName string) {$/;"	f
+QueryAllNode	static.go	/^func QueryAllNode(nodeName string) {$/;"	f
+QueryNode	agent.go	/^func (agent *Agent) QueryNode(nodeName string) {$/;"	f
+REQ_CAST	server.go	/^const ($/;"	c
+REQ_CONN	server.go	/^	REQ_CAST      = 0x01$/;"	c
+REQ_QUERY	gpmd/server.go	/^	REQ_UNREGISTER = 0x02$/;"	c
+REQ_QUERY_ALL	server.go	/^	REQ_CONN      = 0x02$/;"	c
+REQ_REGISTER	gpmd/server.go	/^const ($/;"	c
+REQ_UNREGISTER	gpmd/server.go	/^	REQ_REGISTER   = 0x01$/;"	c
+Register	agent.go	/^func (agent *Agent) Register() {$/;"	f
+RegisterRoutine	agent.go	/^func (agent *Agent) RegisterRoutine(routine *base.Routine) {$/;"	f
+RegisterRoutine	static.go	/^func RegisterRoutine(routine *base.Routine) {$/;"	f
+Routine	base/routine.go	/^type Routine struct {$/;"	t
+RoutineId	base/routine.go	/^type RoutineId uint64$/;"	t
+Run	process.go	/^func (p *Process) Run(handler func([]byte) error) {$/;"	f
+Serve	gpmd/gpmd.go	/^func (m *Manager) Serve() {$/;"	f
+Serve	server.go	/^func (agent *Agent) Serve() {$/;"	f
+SetGPMD	agent.go	/^func (a *Agent) SetGPMD(host string, port uint16) {$/;"	f
+SetGPMD	static.go	/^func SetGPMD(host string, port uint16) {$/;"	f
+SetHost	gpmd/static.go	/^func SetHost(host string) {$/;"	f
+SetId	base/routine.go	/^func (r *Routine) SetId(id RoutineId) {$/;"	f
+SetPort	gpmd/static.go	/^func SetPort(port uint16) {$/;"	f
+Stop	agent.go	/^func (agent *Agent) Stop() {$/;"	f
+Stop	gpmd/server.go	/^func (m *Manager) Stop() {$/;"	f
+Stop	gpmd/static.go	/^func Stop() {$/;"	f
+Stop	static.go	/^func Stop() {$/;"	f
+TestAgent	agent_test.go	/^func TestAgent(t *testing.T) {$/;"	f
+TestGPMD	base/gpmd_test.go	/^func TestGPMD(t *testing.T) {$/;"	f
+TestInit	gpmd/server_test.go	/^func TestInit(t *testing.T) {$/;"	f
+TestNewProcess	process_test.go	/^func TestNewProcess(t *testing.T) {$/;"	f
+TestNode	base/node_test.go	/^func TestNode(t *testing.T) {$/;"	f
+TestQuery	gpmd/server_test.go	/^func TestQuery(t *testing.T) {$/;"	f
+TestRegistion	gpmd/server_test.go	/^func TestRegistion(t *testing.T) {$/;"	f
+TestRestart	gpmd/server_test.go	/^func TestRestart(t *testing.T) {$/;"	f
+TestRoutine	base/routine_test.go	/^func TestRoutine(t *testing.T) {$/;"	f
+TestStop	gpmd/server_test.go	/^func TestStop(t *testing.T) {$/;"	f
+Unregister	agent.go	/^func (agent *Agent) Unregister() {$/;"	f
+_agent	static.go	/^var _agent *Agent$/;"	v
+_host	gpmd/static.go	/^	_port    uint16 = 2613$/;"	v
+_manager	gpmd/static.go	/^	_host           = ""$/;"	v
+_port	gpmd/static.go	/^var ($/;"	v
+acceptLoop	gpmd/server.go	/^func (m *Manager) acceptLoop() {$/;"	f
+base	base/gpmd.go	/^package base$/;"	p
+base	base/gpmd_test.go	/^package base$/;"	p
+base	base/node.go	/^package base$/;"	p
+base	base/node_test.go	/^package base$/;"	p
+base	base/routine.go	/^package base$/;"	p
+base	base/routine_test.go	/^package base$/;"	p
+connExist	agent.go	/^func (agent *Agent) connExist(name string) bool {$/;"	f
+connectTo	agent.go	/^func (agent *Agent) connectTo(nodeName string, isReturn bool) {$/;"	f
+dispatchRequest	gpmd/server.go	/^func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {$/;"	f
+dispatchRequest	server.go	/^func (agent *Agent) dispatchRequest(code byte, request []byte) ([]byte, error) {$/;"	f
+find	gpmd/gpmd.go	/^func (m *Manager) find(name string) (*base.Node, bool) {$/;"	f
+findConn	agent.go	/^func (agent *Agent) findConn(name string) (conn *net.TCPConn, exist bool) {$/;"	f
+findNode	agent.go	/^func (agent *Agent) findNode(name string) (node *base.Node, exist bool) {$/;"	f
+findRoutine	agent.go	/^func (agent *Agent) findRoutine(routineId base.RoutineId) (*base.Routine, bool) {$/;"	f
+godist	agent.go	/^package godist$/;"	p
+godist	agent_test.go	/^package godist$/;"	p
+godist	process.go	/^package godist$/;"	p
+godist	process_test.go	/^package godist$/;"	p
+godist	server.go	/^package godist$/;"	p
+godist	static.go	/^package godist$/;"	p
+godist	static_test.go	/^package godist$/;"	p
+gpmd	gpmd/gpmd.go	/^package gpmd$/;"	p
+gpmd	gpmd/server.go	/^package gpmd$/;"	p
+gpmd	gpmd/server_test.go	/^package gpmd$/;"	p
+gpmd	gpmd/static.go	/^package gpmd$/;"	p
+handleCast	server.go	/^func (agent *Agent) handleCast(request []byte) ([]byte, error) {$/;"	f
+handleConnect	server.go	/^func (agent *Agent) handleConnect(request []byte) ([]byte, error) {$/;"	f
+handleConnection	gpmd/server.go	/^func (m *Manager) handleConnection(conn *net.TCPConn) error {$/;"	f
+handleConnection	server.go	/^func (agent *Agent) handleConnection(conn *net.TCPConn) {$/;"	f
+handleQuery	gpmd/server.go	/^func (m *Manager) handleQuery(request []byte) ([]byte, error) {$/;"	f
+handleQueryAllNodes	server.go	/^func (agent *Agent) handleQueryAllNodes(request []byte) ([]byte, error) {$/;"	f
+handleRegister	gpmd/server.go	/^func (m *Manager) handleRegister(request []byte) ([]byte, error) {$/;"	f
+handleUnregister	gpmd/server.go	/^func (m *Manager) handleUnregister(request []byte) ([]byte, error) {$/;"	f
+incrRoutineId	agent.go	/^func (agent *Agent) incrRoutineId() base.RoutineId {$/;"	f
+main	gpmd_server/server.go	/^func main() {$/;"	f
+main	gpmd_server/server.go	/^package main$/;"	p
+nodeExist	agent.go	/^func (agent *Agent) nodeExist(name string) bool {$/;"	f
+nodeName1	agent_test.go	/^var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhost", "testnode3@localhost"$/;"	v
+nodeName2	agent_test.go	/^var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhost", "testnode3@localhost"$/;"	v
+nodeName3	agent_test.go	/^var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhost", "testnode3@localhost"$/;"	v
+parseNameAndHost	agent.go	/^func parseNameAndHost(nodeName string) (string, string) {$/;"	f
+register	gpmd/gpmd.go	/^func (m *Manager) register(node *base.Node) bool {$/;"	f
+registerConn	agent.go	/^func (agent *Agent) registerConn(name string, conn *net.TCPConn) {$/;"	f
+registerNode	agent.go	/^func (agent *Agent) registerNode(node *base.Node) {$/;"	f
+registerRoutine	agent.go	/^func (agent *Agent) registerRoutine(routine *base.Routine) {$/;"	f
+routineCounter	agent.go	/^var routineCounter uint64$/;"	v
+run	process.go	/^func (p *Process) run(handler func([]byte) error) {$/;"	f
+tAgent1	agent_test.go	/^var tAgent1, tAgent2, tAgent3 *Agent$/;"	v
+tAgent2	agent_test.go	/^var tAgent1, tAgent2, tAgent3 *Agent$/;"	v
+tAgent3	agent_test.go	/^var tAgent1, tAgent2, tAgent3 *Agent$/;"	v
+testCastTo	agent_test.go	/^func testCastTo(t *testing.T) {$/;"	f
+testConnect	agent_test.go	/^func testConnect(t *testing.T) {$/;"	f
+testHost	gpmd/server_test.go	/^	testPort = 1989$/;"	c
+testNew	agent_test.go	/^func testNew(t *testing.T) {$/;"	f
+testPort	gpmd/server_test.go	/^const ($/;"	c
+testQueryAll	agent_test.go	/^func testQueryAll(t *testing.T) {$/;"	f
+testRegisterRoutine	agent_test.go	/^func testRegisterRoutine(t *testing.T) {$/;"	f
+testRegisterToGPMD	agent_test.go	/^func testRegisterToGPMD(t *testing.T) {$/;"	f
+testRegisterToGPMD2	agent_test.go	/^func testRegisterToGPMD2(t *testing.T) {$/;"	f
+testSetGPMD	agent_test.go	/^func testSetGPMD(t *testing.T) {$/;"	f
+testStop	agent_test.go	/^func testStop(t *testing.T) {$/;"	f
+unregister	gpmd/gpmd.go	/^func (m *Manager) unregister(name string) bool {$/;"	f

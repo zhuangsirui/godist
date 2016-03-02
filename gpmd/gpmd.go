@@ -10,22 +10,34 @@ import (
 
 // GPMD Manager 对象。保持本机的所有节点，以及向外部节点提供查询服务。
 type Manager struct {
-	port     uint16
-	host     string
-	nodes    map[string]*base.Node
-	nodeLock *sync.RWMutex
-	listener *net.TCPListener
-	isStop   bool
+	port      uint16
+	host      string
+	nodes     map[string]*base.Node
+	nodeLock  *sync.RWMutex
+	listener  *net.TCPListener
+	isStop    bool
+	stopped   chan bool
+	restarted chan bool
 }
 
 // 创建一个 GPMD 实例。
 func New(host string, port uint16) *Manager {
 	return &Manager{
-		port:     port,
-		host:     host,
-		nodes:    make(map[string]*base.Node),
-		nodeLock: new(sync.RWMutex),
+		port:      port,
+		host:      host,
+		nodes:     make(map[string]*base.Node),
+		nodeLock:  new(sync.RWMutex),
+		stopped:   make(chan bool, 1),
+		restarted: make(chan bool, 1),
 	}
+}
+
+func (m *Manager) Stopped() {
+	<-m.stopped
+}
+
+func (m *Manager) Restarted() {
+	<-m.restarted
 }
 
 // 启动 GPMD 服务。

@@ -34,7 +34,10 @@ func (m *Manager) acceptLoop() {
 		}
 		if !m.isStop {
 			log.Printf("GPMD accept loop is not stop. Reserving...")
+			m.restarted <- true
 			m.Serve()
+		} else {
+			close(m.stopped)
 		}
 	}()
 	for {
