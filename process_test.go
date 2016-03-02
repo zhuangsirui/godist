@@ -55,24 +55,3 @@ func TestNewProcess(t *testing.T) {
 		})
 	})
 }
-
-/*
-func TestStaticNewProcess(t *testing.T) {
-	nodeName7 := "testnode7@localhost"
-	Init(nodeName7)
-	process := NewProcess()
-	replyChann := make(chan []byte)
-	go process.Run(func(message []byte) error {
-		if bytes.Compare(message, []byte{'p', 'i', 'n', 'g'}) != 0 {
-			t.Error("message error")
-		}
-		replyChann <- []byte{'p', 'o', 'n', 'g'}
-		return nil
-	})
-	process.Channel <- []byte{'p', 'i', 'n', 'g'}
-	reply := <-replyChann
-	if bytes.Compare(reply, []byte{'p', 'o', 'n', 'g'}) != 0 {
-		t.Error("message error")
-	}
-}
-*/
