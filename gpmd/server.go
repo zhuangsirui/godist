@@ -23,8 +23,8 @@ const (
 )
 
 func (m *Manager) Stop() {
-	m.listener.Close()
 	m.isStop = true
+	m.listener.Close()
 }
 
 func (m *Manager) acceptLoop() {
@@ -34,8 +34,9 @@ func (m *Manager) acceptLoop() {
 		}
 		if !m.isStop {
 			log.Printf("GPMD accept loop is not stop. Reserving...")
+			m.listener.Close()
+			go m.Serve()
 			m.restarted <- true
-			m.Serve()
 		} else {
 			close(m.stopped)
 		}

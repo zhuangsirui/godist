@@ -3,14 +3,24 @@ package godist
 import (
 	"godist/base"
 	"godist/gpmd"
+	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/smartystreets/goconvey/convey"
 )
 
-var tAgent1, tAgent2, tAgent3 *Agent
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
 
-var nodeName1, nodeName2, nodeName3 = "testnode1@localhost", "testnode2@localhost", "testnode3@localhost"
+func testMultiTimes(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		TestAgent(t)
+		TestNewProcess(t)
+		TestStatic(t)
+	}
+}
 
 func TestAgent(t *testing.T) {
 	convey.Convey("Agent", t, func() {
@@ -26,38 +36,39 @@ func TestAgent(t *testing.T) {
 			}, convey.ShouldPanic)
 		})
 
-		var gpmdPort uint16 = 1988
-		agent := New("agent@localhost")
-		convey.So(agent.Host(), convey.ShouldEqual, agent.Host())
-		convey.So(agent.Name(), convey.ShouldEqual, agent.Name())
-		agent.SetGPMD("localhost", gpmdPort)
-
-		convey.Convey("Register panic", func() {
+		convey.Convey("Without GPMD", func() {
+			agent := New("agent@localhost")
+			convey.So(agent.Host(), convey.ShouldEqual, agent.Host())
+			convey.So(agent.Name(), convey.ShouldEqual, agent.Name())
+			agent.SetGPMD("localhost", 1000)
 			convey.So(func() {
 				agent.Register()
 			}, convey.ShouldPanic)
 		})
 
-		convey.Convey("Start GPMD", func() {
-			m := gpmd.New(agent.Host(), gpmdPort)
+		convey.Convey("With GPMD", func() {
+			localhost := "localhost"
+			var gpmdPort uint16 = 1989
+			m := gpmd.New(localhost, gpmdPort)
 			m.Serve()
 
-			convey.Convey("Register", func() {
-
+			convey.Convey("Start base agent", func() {
+				agent := New("agent@localhost")
+				convey.So(agent.Host(), convey.ShouldEqual, agent.Host())
+				convey.So(agent.Name(), convey.ShouldEqual, agent.Name())
+				agent.SetGPMD("localhost", gpmdPort)
 				convey.So(func() {
 					agent.Listen()
 					agent.Register()
-					go agent.Serve()
 				}, convey.ShouldNotPanic)
+				go agent.Serve()
 
 				convey.Convey("Connect", func() {
 					targetAgent := New("target_agent@localhost")
 					targetAgent.SetGPMD(agent.Host(), gpmdPort)
-					convey.So(func() {
-						targetAgent.Listen()
-						targetAgent.Register()
-						go targetAgent.Serve()
-					}, convey.ShouldNotPanic)
+					targetAgent.Listen()
+					targetAgent.Register()
+					go targetAgent.Serve()
 
 					agent.QueryNode(targetAgent.node.FullName())
 					agent.ConnectTo(targetAgent.Name())
@@ -69,16 +80,6 @@ func TestAgent(t *testing.T) {
 					convey.So(targetAgent.nodeExist(agent.Name()), convey.ShouldBeTrue)
 					convey.So(targetAgent.connections, convey.ShouldContainKey, agent.Name())
 
-					convey.Convey("Register routine", func() {
-						routine := &base.Routine{
-							Channel: make(chan []byte),
-						}
-						agent.RegisterRoutine(routine)
-						routine2, exist := agent.findRoutine(routine.GetId())
-						convey.So(exist, convey.ShouldBeTrue)
-						convey.So(routine2, convey.ShouldEqual, routine)
-					})
-
 					convey.Convey("Cast to", func() {
 						routine := &base.Routine{
 							Channel: make(chan []byte, 1),
@@ -87,26 +88,33 @@ func TestAgent(t *testing.T) {
 						targetAgent.RegisterRoutine(routine)
 						go agent.CastTo(targetAgent.Name(), routine.GetId(), ping)
 						convey.So(<-routine.Channel, convey.ShouldResemble, ping)
+
+						convey.Convey("Query all", func() {
+							another := New("another@localhost")
+							another.SetGPMD(localhost, gpmdPort)
+							another.Listen()
+							another.Register()
+							go another.Serve()
+							another.QueryNode(agent.Name())
+							another.ConnectTo(agent.Name())
+							another.QueryAllNode(agent.Name())
+							convey.So(another.nodeExist(targetAgent.Name()), convey.ShouldBeTrue)
+							another.Stop()
+							another.Stopped()
+						})
 					})
 
-					convey.Convey("Query all", func() {
-						another := New("another@localhost")
-						another.SetGPMD(another.Host(), gpmdPort)
-						another.Listen()
-						another.Register()
-						go another.Serve()
-						another.QueryNode(agent.Name())
-						another.ConnectTo(agent.Name())
-						another.QueryAllNode(agent.Name())
-						convey.So(another.nodeExist(targetAgent.Name()), convey.ShouldBeTrue)
-					})
+					targetAgent.Stop()
+					targetAgent.Stopped()
 				})
 
+				agent.Stop()
+				agent.Stopped()
 			})
 
-			agent.Stop()
 			m.Stop()
 			m.Stopped()
 		})
+
 	})
 }

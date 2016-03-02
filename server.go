@@ -62,6 +62,7 @@ func (agent *Agent) Listen() {
 	if agent.listener == nil {
 		log.Panicf(strings.Join(errMessages, "\n"))
 	}
+	log.Printf("godist.agent Listen %s successful.", agent.listener.Addr())
 	agent.registerNode(agent.Node())
 }
 
@@ -72,6 +73,7 @@ func (agent *Agent) Serve() {
 		if err != nil {
 			// handle accept error
 			log.Printf("godist.agent accept tcp error: %s", err)
+			close(agent.stopped)
 			break
 		}
 		go agent.handleConnection(conn)

@@ -31,6 +31,7 @@ type Agent struct {
 	connectionLock *sync.RWMutex
 	listener       *net.TCPListener
 	routineCounter *uint64
+	stopped        chan bool
 }
 
 // New 构建 godist.Agent 对象，返回其指针。
@@ -54,7 +55,12 @@ func New(node string) *Agent {
 		connections:    make(map[string]*net.TCPConn),
 		connectionLock: new(sync.RWMutex),
 		routineCounter: &routineCounter,
+		stopped:        make(chan bool, 1),
 	}
+}
+
+func (a *Agent) Stopped() {
+	<-a.stopped
 }
 
 func (a *Agent) Host() string {
@@ -147,6 +153,7 @@ func (agent *Agent) Register() {
 	if unpacker.Error() != nil || apiCode != gpmd.REQ_REGISTER || resCode != gpmd.ACK_RES_OK {
 		log.Panicf("godist: Register failed. API: %d, Res: %d", apiCode, resCode)
 	}
+	log.Printf("godist.agent Register to %s successful", resolvedAddr)
 }
 
 func (agent *Agent) QueryAllNode(nodeName string) {

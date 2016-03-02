@@ -32,9 +32,9 @@ func TestStatic(t *testing.T) {
 				}
 				RegisterRoutine(routine)
 
-				convey.Convey("Cast Local", func() {
+				convey.Convey("Cast local", func() {
 					ping := []byte("ping")
-					CastTo("static", routine.GetId(), ping)
+					CastTo(_agent.Name(), routine.GetId(), ping)
 					convey.So(<-routine.Channel, convey.ShouldResemble, ping)
 				})
 
@@ -56,6 +56,8 @@ func TestStatic(t *testing.T) {
 						CastTo(agent.Name(), routine.GetId(), ping)
 						convey.So(<-routine.Channel, convey.ShouldResemble, ping)
 					})
+					agent.Stop()
+					agent.Stopped()
 				})
 			})
 
@@ -78,6 +80,7 @@ func TestStatic(t *testing.T) {
 			})
 
 			Stop()
+			Stopped()
 		})
 
 		m.Stop()

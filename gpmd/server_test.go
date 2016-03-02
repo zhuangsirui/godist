@@ -16,6 +16,10 @@ const (
 	testHost = "localhost"
 )
 
+func init() {
+	//log.SetOutput(ioutil.Discard)
+}
+
 func TestInit(t *testing.T) {
 	convey.Convey("Init", t, func() {
 		convey.Convey("Init should panic resolve addr", func() {
