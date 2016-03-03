@@ -35,8 +35,7 @@ func (m *Manager) acceptLoop() {
 		if !m.isStop {
 			log.Printf("GPMD accept loop is not stop. Reserving...")
 			m.listener.Close()
-			go m.Serve()
-			m.restarted <- true
+			m.serve(true)
 		} else {
 			close(m.stopped)
 		}
@@ -48,9 +47,9 @@ func (m *Manager) acceptLoop() {
 			log.Printf("Accept error %s", err)
 			break
 		}
-		// 同步调用，原子性处理各个节点的请求
-		m.handleConnection(conn)
-		conn.Close()
+		// 异步调用，原子性处理各个节点的请求
+		// TODO 检查异步调用的副作用
+		go m.handleConnection(conn)
 	}
 }
 
@@ -63,6 +62,7 @@ func (m *Manager) acceptLoop() {
  * +----------------------------+
  */
 func (m *Manager) handleConnection(conn *net.TCPConn) error {
+	defer conn.Close()
 	unpacker := binpacker.NewUnpacker(conn)
 	var requestBuffer []byte
 	unpacker.BytesWithUint16Perfix(&requestBuffer)

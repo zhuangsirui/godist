@@ -16,10 +16,22 @@ func SetHost(host string) {
 	_host = host
 }
 
+func Port() uint16 {
+	return _manager.port
+}
+
+func Host() string {
+	return _manager.host
+}
+
 // 初始化 GPMD 服务。
 func Init() {
 	_manager = New(_host, _port)
 	_manager.Serve()
+}
+
+func Started() {
+	_manager.Started()
 }
 
 func Stop() {

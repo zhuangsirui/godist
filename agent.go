@@ -395,7 +395,6 @@ func (agent *Agent) findNode(name string) (node *base.Node, exist bool) {
 	agent.nodeLock.RLock()
 	defer agent.nodeLock.RUnlock()
 	node, exist = agent.nodes[name]
-	fmt.Printf("node: %s in agent %s", name, agent.Name())
 	return
 }
 
