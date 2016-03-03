@@ -115,7 +115,7 @@ func (agent *Agent) Unregister() {
 		PushString(agent.Name())
 	request := binpacker.AddUint16Perfix(requestBuf.Bytes())
 	if _, wErr := conn.Write(request); wErr != nil {
-		log.Panicf("godist: Send unregister message error: %s", wErr)
+		log.Printf("godist: Send unregister message error: %s", wErr)
 	}
 	var apiCode, resCode byte
 	unpacker := binpacker.NewUnpacker(conn)

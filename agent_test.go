@@ -1,13 +1,17 @@
 package godist
 
 import (
+	"bytes"
+	"fmt"
 	"godist/base"
 	"godist/gpmd"
 	"io/ioutil"
 	"log"
+	"net"
 	"testing"
 
 	"github.com/smartystreets/goconvey/convey"
+	"github.com/zhuangsirui/binpacker"
 )
 
 func init() {
@@ -63,6 +67,10 @@ func TestAgent(t *testing.T) {
 				}, convey.ShouldNotPanic)
 				go agent.Serve()
 
+				convey.Convey("Query self", func() {
+					agent.QueryAllNode(agent.node.FullName())
+				})
+
 				convey.Convey("Connect", func() {
 					targetAgent := New("target_agent@localhost")
 					targetAgent.SetGPMD(agent.Host(), gpmdPort)
@@ -80,6 +88,20 @@ func TestAgent(t *testing.T) {
 					convey.So(targetAgent.nodeExist(agent.Name()), convey.ShouldBeTrue)
 					convey.So(targetAgent.connections, convey.ShouldContainKey, agent.Name())
 
+					convey.Convey("Query all", func() {
+						another := New("another@localhost")
+						another.SetGPMD(localhost, gpmdPort)
+						another.Listen()
+						another.Register()
+						go another.Serve()
+						another.QueryNode(agent.Name())
+						another.ConnectTo(agent.Name())
+						another.QueryAllNode(agent.Name())
+						convey.So(another.nodeExist(targetAgent.Name()), convey.ShouldBeTrue)
+						another.Stop()
+						another.Stopped()
+					})
+
 					convey.Convey("Cast to", func() {
 						routine := &base.Routine{
 							Channel: make(chan []byte, 1),
@@ -88,24 +110,30 @@ func TestAgent(t *testing.T) {
 						targetAgent.RegisterRoutine(routine)
 						go agent.CastTo(targetAgent.Name(), routine.GetId(), ping)
 						convey.So(<-routine.Channel, convey.ShouldResemble, ping)
-
-						convey.Convey("Query all", func() {
-							another := New("another@localhost")
-							another.SetGPMD(localhost, gpmdPort)
-							another.Listen()
-							another.Register()
-							go another.Serve()
-							another.QueryNode(agent.Name())
-							another.ConnectTo(agent.Name())
-							another.QueryAllNode(agent.Name())
-							convey.So(another.nodeExist(targetAgent.Name()), convey.ShouldBeTrue)
-							another.Stop()
-							another.Stopped()
-						})
+						go agent.CastTo(targetAgent.Name(), base.RoutineId(9898), ping)
 					})
 
 					targetAgent.Stop()
 					targetAgent.Stopped()
+				})
+
+				convey.Convey("Bad request", func() {
+					requestBuf := new(bytes.Buffer)
+					conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", agent.Host(), agent.Port()))
+					convey.So(err, convey.ShouldBeNil)
+					binpacker.NewPacker(requestBuf).PushByte(0xff)
+					_, err = conn.Write(binpacker.AddUint64Perfix(requestBuf.Bytes()))
+					convey.So(err, convey.ShouldBeNil)
+				})
+
+				convey.Convey("Bad connection", func() {
+					requestBuf := new(bytes.Buffer)
+					conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", agent.Host(), agent.Port()))
+					convey.So(err, convey.ShouldBeNil)
+					binpacker.NewPacker(requestBuf).PushByte(0xff)
+					_, err = conn.Write(binpacker.AddUint64Perfix(requestBuf.Bytes()))
+					conn.Close()
+					convey.So(err, convey.ShouldBeNil)
 				})
 
 				agent.Stop()
@@ -114,6 +142,32 @@ func TestAgent(t *testing.T) {
 
 			m.Stop()
 			m.Stopped()
+		})
+
+		convey.Convey("Unregister", func() {
+			localhost := "localhost"
+			var gpmdPort uint16 = 1989
+			m := gpmd.New(localhost, gpmdPort)
+			m.Serve()
+			agent := New("agent@localhost")
+			agent.SetGPMD("localhost", gpmdPort)
+			agent.Register()
+
+			convey.Convey("GPMD Addr error", func() {
+				agent.SetGPMD("fake**host", 0)
+				convey.So(func() {
+					agent.Unregister()
+				}, convey.ShouldNotPanic)
+			})
+
+			m.Stop()
+			m.Stopped()
+
+			convey.Convey("GPMD down", func() {
+				convey.So(func() {
+					agent.Unregister()
+				}, convey.ShouldNotPanic)
+			})
 		})
 
 	})
