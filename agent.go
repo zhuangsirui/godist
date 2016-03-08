@@ -31,6 +31,7 @@ type Agent struct {
 	connectionLock *sync.RWMutex
 	listener       *net.TCPListener
 	routineCounter *uint64
+	isStop         bool
 	stopped        chan bool
 }
 
@@ -60,6 +61,7 @@ func New(node string) *Agent {
 }
 
 func (a *Agent) Stopped() {
+	a.isStop = true
 	<-a.stopped
 }
 

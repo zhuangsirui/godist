@@ -35,6 +35,11 @@ var PORTS = []uint16{
 
 // 监听目标端口。
 func (agent *Agent) Listen() {
+	agent.listen()
+	agent.registerNode(agent.Node())
+}
+
+func (agent *Agent) listen() {
 	var errMessages []string
 	agent.listener = nil
 	for _, port := range PORTS {
@@ -63,11 +68,18 @@ func (agent *Agent) Listen() {
 		log.Panicf(strings.Join(errMessages, "\n"))
 	}
 	log.Printf("godist.agent Listen %s successful.", agent.listener.Addr())
-	agent.registerNode(agent.Node())
 }
 
 // 接收请求循环。
 func (agent *Agent) Serve() {
+	defer func() {
+		agent.listener.Close()
+		if !agent.isStop {
+			agent.listen()
+			log.Printf("godist.agent agent restarted")
+			go agent.Serve()
+		}
+	}()
 	for {
 		conn, err := agent.listener.AcceptTCP()
 		if err != nil {
