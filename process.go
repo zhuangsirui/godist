@@ -12,7 +12,7 @@ type Process struct {
 }
 
 func (agent *Agent) NewProcess() *Process {
-	c := make(chan []byte, 100)
+	c := make(chan []byte, 100) // XXX this will block channel!
 	routine := &base.Routine{
 		Channel: c,
 	}
@@ -27,6 +27,18 @@ func (p *Process) GetId() base.RoutineId {
 	return p.routine.GetId()
 }
 
+func (p *Process) Receive(bytes []byte) (success bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("godist: process %d receive message failed: %s", p.GetId(), r)
+			success = false
+		}
+	}()
+	p.Channel <- bytes
+	success = true
+	return
+}
+
 func (p *Process) Run(handler func([]byte) error) {
 	p.run(handler)
 }
@@ -36,6 +48,8 @@ func (p *Process) run(handler func([]byte) error) {
 		if err := recover(); err != nil {
 			log.Printf("godist: process restart for reason: %s\n%s", err, debug.Stack())
 			p.run(handler)
+		} else {
+			close(p.Channel)
 		}
 	}()
 	for {
