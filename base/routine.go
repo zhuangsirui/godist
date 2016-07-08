@@ -1,5 +1,7 @@
 package base
 
+import "log"
+
 // 使用一个 uint64 保存每个 Goroutine 的 ID 。
 type RoutineId uint64
 
@@ -29,5 +31,10 @@ func (r *Routine) GetId() RoutineId {
 }
 
 func (r *Routine) Cast(message []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("godist: get cast failed: %s", r)
+		}
+	}()
 	r.Channel <- message
 }
