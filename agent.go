@@ -192,8 +192,8 @@ func (agent *Agent) QueryAllNode(nodeName string) {
 			var port uint16
 			var name, host string
 			unpacker.FetchUint16(&port).
-				StringWithUint16Perfix(&name).
-				StringWithUint16Perfix(&host)
+				StringWithUint16Prefix(&name).
+				StringWithUint16Prefix(&host)
 			if unpacker.Error() != nil {
 				return
 			}
@@ -250,7 +250,7 @@ func (agent *Agent) QueryNode(nodeName string) {
 		}
 		var port uint16
 		var ackName string
-		if unpacker.FetchUint16(&port).StringWithUint16Perfix(&ackName).Error() != nil {
+		if unpacker.FetchUint16(&port).StringWithUint16Prefix(&ackName).Error() != nil {
 			return
 		}
 		if ackName != name {

@@ -38,6 +38,10 @@ func Register() {
 	_agent.Register()
 }
 
+func Unregister() {
+	_agent.Unregister()
+}
+
 func Host() string {
 	return _agent.Host()
 }

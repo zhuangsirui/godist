@@ -66,7 +66,7 @@ func (m *Manager) handleConnection(conn *net.TCPConn) error {
 	defer conn.Close()
 	unpacker := binpacker.NewUnpacker(binary.LittleEndian, conn)
 	var requestBuffer []byte
-	unpacker.BytesWithUint16Perfix(&requestBuffer)
+	unpacker.BytesWithUint16Prefix(&requestBuffer)
 	code, request := requestBuffer[0], requestBuffer[1:]
 	answer, err := m.dispatchRequest(code, request)
 	conn.Write(answer)
@@ -112,8 +112,8 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
 	var port uint16
 	var name, host string
 	unpacker.FetchUint16(&port).
-		StringWithUint16Perfix(&name).
-		StringWithUint16Perfix(&host)
+		StringWithUint16Prefix(&name).
+		StringWithUint16Prefix(&host)
 	ok := m.register(&base.Node{
 		Port: port,
 		Host: host,
@@ -156,7 +156,7 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
 func (m *Manager) handleQuery(request []byte) ([]byte, error) {
 	unpacker := binpacker.NewUnpacker(binary.LittleEndian, bytes.NewBuffer(request))
 	var name string
-	unpacker.StringWithUint16Perfix(&name)
+	unpacker.StringWithUint16Prefix(&name)
 	node, exist := m.find(name)
 	if !exist {
 		answer := []byte{ACK_RES_NODE_NOT_EXIST}
@@ -190,7 +190,7 @@ func (m *Manager) handleQuery(request []byte) ([]byte, error) {
 func (m *Manager) handleUnregister(request []byte) ([]byte, error) {
 	unpacker := binpacker.NewUnpacker(binary.LittleEndian, bytes.NewBuffer(request))
 	var name string
-	unpacker.StringWithUint16Perfix(&name)
+	unpacker.StringWithUint16Prefix(&name)
 	ok := m.unregister(name)
 	var answer []byte
 	var err error

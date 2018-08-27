@@ -79,7 +79,7 @@ func (m *Manager) register(node *base.Node) bool {
 	_, exist := m.nodes[node.Name]
 	if !exist {
 		m.nodes[node.Name] = node
-		log.Printf("GPMD node %s register success", node.Name)
+		log.Printf("GPMD node %s registered", node.Name)
 	}
 	return !exist
 }
@@ -90,6 +90,7 @@ func (m *Manager) unregister(name string) bool {
 	_, exist := m.nodes[name]
 	if exist {
 		delete(m.nodes, name)
+		log.Printf("GPMD node %s unregistered", name)
 	}
 	return exist
 }

@@ -162,8 +162,8 @@ func (agent *Agent) handleConnect(request []byte) ([]byte, error) {
 	var name, host string
 	unpacker.FetchByte(&isReturn).
 		FetchUint16(&port).
-		StringWithUint16Perfix(&name).
-		StringWithUint16Perfix(&host)
+		StringWithUint16Prefix(&name).
+		StringWithUint16Prefix(&host)
 	node := &base.Node{
 		Name: name,
 		Host: host,
