@@ -2,12 +2,13 @@ package gpmd
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
-	"godist/base"
 	"log"
 	"net"
 
 	"github.com/zhuangsirui/binpacker"
+	"github.com/zhuangsirui/godist/base"
 )
 
 const (
@@ -63,7 +64,7 @@ func (m *Manager) acceptLoop() {
  */
 func (m *Manager) handleConnection(conn *net.TCPConn) error {
 	defer conn.Close()
-	unpacker := binpacker.NewUnpacker(conn)
+	unpacker := binpacker.NewUnpacker(binary.LittleEndian, conn)
 	var requestBuffer []byte
 	unpacker.BytesWithUint16Perfix(&requestBuffer)
 	code, request := requestBuffer[0], requestBuffer[1:]
@@ -107,7 +108,7 @@ func (m *Manager) dispatchRequest(code byte, request []byte) ([]byte, error) {
  * +--------+
  */
 func (m *Manager) handleRegister(request []byte) ([]byte, error) {
-	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(binary.LittleEndian, bytes.NewBuffer(request))
 	var port uint16
 	var name, host string
 	unpacker.FetchUint16(&port).
@@ -153,7 +154,7 @@ func (m *Manager) handleRegister(request []byte) ([]byte, error) {
  * +-------------------------------------------+
  */
 func (m *Manager) handleQuery(request []byte) ([]byte, error) {
-	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(binary.LittleEndian, bytes.NewBuffer(request))
 	var name string
 	unpacker.StringWithUint16Perfix(&name)
 	node, exist := m.find(name)
@@ -162,7 +163,7 @@ func (m *Manager) handleQuery(request []byte) ([]byte, error) {
 		return answer, errors.New("node not exists")
 	}
 	requestBuf := new(bytes.Buffer)
-	binpacker.NewPacker(requestBuf).
+	binpacker.NewPacker(binary.LittleEndian, requestBuf).
 		PushByte(ACK_RES_OK).
 		PushUint16(node.Port).
 		PushUint16(uint16(len(node.Name))).
@@ -187,7 +188,7 @@ func (m *Manager) handleQuery(request []byte) ([]byte, error) {
  * +--------+
  */
 func (m *Manager) handleUnregister(request []byte) ([]byte, error) {
-	unpacker := binpacker.NewUnpacker(bytes.NewBuffer(request))
+	unpacker := binpacker.NewUnpacker(binary.LittleEndian, bytes.NewBuffer(request))
 	var name string
 	unpacker.StringWithUint16Perfix(&name)
 	ok := m.unregister(name)

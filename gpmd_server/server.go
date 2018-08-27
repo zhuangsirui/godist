@@ -1,10 +1,11 @@
 package main
 
 import (
-	"godist/gpmd"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/zhuangsirui/godist/gpmd"
 )
 
 func main() {

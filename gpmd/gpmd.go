@@ -2,10 +2,11 @@ package gpmd
 
 import (
 	"fmt"
-	"godist/base"
 	"log"
 	"net"
 	"sync"
+
+	"github.com/zhuangsirui/godist/base"
 )
 
 // GPMD Manager 对象。保持本机的所有节点，以及向外部节点提供查询服务。

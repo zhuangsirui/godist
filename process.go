@@ -1,9 +1,10 @@
 package godist
 
 import (
-	"godist/base"
 	"log"
 	"runtime/debug"
+
+	"github.com/zhuangsirui/godist/base"
 )
 
 type Process struct {

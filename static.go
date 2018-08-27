@@ -1,8 +1,6 @@
 package godist
 
-import (
-	"godist/base"
-)
+import "github.com/zhuangsirui/godist/base"
 
 var _agent *Agent
 
